@@ -1,4 +1,4 @@
-import Video, { IVideo } from "@/app/models/Video";
+import Video, { IVideo } from "@/models/Video";
 import { authOptions } from "@/lib/auth";
 import { connectToDateBase } from "@/lib/db";
 import { getServerSession } from "next-auth";
