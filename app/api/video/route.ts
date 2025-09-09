@@ -1,66 +1,127 @@
-import Video, { IVideo } from "@/models/Video";
-import { authOptions } from "@/lib/auth";
-import { connectToDateBase } from "@/lib/db";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/db";
+import Video from "@/models/Video";
+import { 
+  checkRateLimit, 
+  logSecurityEvent 
+} from "@/lib/security";
 
-export async function GET() {
-    try {
-        await connectToDateBase()
-        const videos = await Video.find({}).sort({ createdAt: -1 }).lean();
-        if (!videos || videos.length === 0) {
-            return NextResponse.json([], { status: 200 })
-        }
-        return NextResponse.json(videos)
-    } catch (error) {
-        console.log(error)
-        return NextResponse.json({ error: "Failed to fetch videos" }, { status: 500 });
+// GET /api/video - Get all public videos with pagination
+export async function GET(request: NextRequest) {
+  try {
+    // Rate limiting for video listing
+    const rateLimit = await checkRateLimit(request, 'api');
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
     }
-};
 
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const page = parseInt(searchParams.get('page') || '1');
+    const skip = (page - 1) * limit;
 
+    await connectToDatabase();
+    
+    // Get total count for pagination
+    const totalVideos = await Video.countDocuments({ isPublic: true });
+    
+    // Get videos with pagination
+    const videos = await Video.find({ 
+      isPublic: true 
+    })
+    .select('-__v')
+    .sort({ createdAt: -1 }) // Sort by newest first
+    .skip(skip)
+    .limit(limit)
+    .lean();
+    
+    logSecurityEvent('VIDEOS_LISTED', { 
+      count: videos.length, 
+      page, 
+      limit 
+    }, request);
+
+    return NextResponse.json({ 
+      videos,
+      pagination: {
+        page,
+        limit,
+        total: totalVideos,
+        pages: Math.ceil(totalVideos / limit)
+      }
+    }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching videos:", error);
+    logSecurityEvent('VIDEOS_FETCH_ERROR', { error: error.message }, request);
+    return NextResponse.json(
+      { error: "Failed to fetch videos" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/video - Create a new video
 export async function POST(request: NextRequest) {
-    try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
-            return NextResponse.json({
-                error: "Unauthorized"
-            },
-                { status: 401 }
-            );
-
-        }
-
-        await connectToDateBase();
-        const body: IVideo = await request.json();
-        if (
-            !body.title ||
-            !body.desciption ||
-            !body.videoUrl ||
-            !body.thumbnailUrl
-        ) {
-            return NextResponse.json(
-                { error: "Missing required fields" },
-                { status: 400 }
-            );
-        }
-
-        const videoData = {
-            ...body,
-            controls: body.controls ?? true,
-            transformation: {
-                height: 1920,
-                width: 1080,
-                quality: body.transformation?.quality ?? 100
-            }
-        }
-
-        const newVideo = await Video.create(videoData);
-        return NextResponse.json(newVideo);
-    } catch (error) {
-        return NextResponse.json(
-            { error: "Failed to create video" },
-            { status: 500 }
-        );
+  try {
+    // Rate limiting for video creation
+    const rateLimit = await checkRateLimit(request, 'upload');
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
     }
+
+    const body = await request.json();
+    
+    // Basic validation
+    if (!body.title || !body.description || !body.videoUrl || !body.thumbnailUrl) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+    
+    const video = new Video({
+      title: body.title,
+      description: body.description,
+      videoUrl: body.videoUrl,
+      thumbnailUrl: body.thumbnailUrl,
+      uploader: body.uploader || null,
+      uploaderName: body.uploaderName,
+      uploaderEmail: body.uploaderEmail,
+      controls: body.controls !== false, // Default to true
+      transformation: body.transformation || {
+        height: 1920,
+        width: 1080
+      },
+      tags: body.tags || [],
+      duration: body.duration || 0,
+      isPublic: body.isPublic !== false, // Default to true
+    });
+
+    const savedVideo = await video.save();
+    
+    logSecurityEvent('VIDEO_CREATED', { 
+      videoId: savedVideo._id,
+      title: savedVideo.title 
+    }, request);
+
+    return NextResponse.json({ 
+      video: savedVideo,
+      message: "Video created successfully" 
+    }, { status: 201 });
+  } catch (error) {
+    console.error("Error creating video:", error);
+    logSecurityEvent('VIDEO_CREATE_ERROR', { error: error.message }, request);
+    return NextResponse.json(
+      { error: "Failed to create video" },
+      { status: 500 }
+    );
+  }
 }

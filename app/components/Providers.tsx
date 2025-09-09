@@ -1,15 +1,18 @@
-import { SessionProvider } from "next-auth/react";
+'use client';
 import { ImageKitProvider } from "@imagekit/next";
+import { SessionProvider } from "next-auth/react";
+import { NotificationProvider } from "./Notification";
+
+const urlEndPoint = process.env.NEXT_PUBLIC_URL_ENDPOINT!;
+
 export default function Providers({ children }: { children: React.ReactNode }) {
-    const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!;
-
-    return <SessionProvider refetchInterval={5 * 60}>
-        <ImageKitProvider
-            urlEndpoint={urlEndpoint}
-            
-        >
-            {children}
-        </ImageKitProvider>
-    </SessionProvider>;
-
+  return (
+    <SessionProvider refetchInterval={5 * 60}>
+      <ImageKitProvider urlEndpoint={urlEndPoint}>
+        <NotificationProvider>
+          {children}
+        </NotificationProvider>
+      </ImageKitProvider>
+    </SessionProvider>
+  );
 }
