@@ -13,10 +13,13 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Experimental features
+  // Fix for build manifest issues
+  output: 'standalone',
+  
+  // Experimental features - simplified to avoid build issues
   experimental: {
-    optimizeCss: true,
-    optimizePackageImports: ['@imagekit/next', 'lucide-react'],
+    // Temporarily disable optimizePackageImports to fix manifest errors
+    // optimizePackageImports: ['@imagekit/next', 'lucide-react'],
   },
   
   // Headers for security and caching

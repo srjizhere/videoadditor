@@ -1,11 +1,26 @@
 "use client";
 
 import VideoUploadForm from "../components/VideoUploadForm";
+import ImageUploadForm from "../components/ImageUploadForm";
 import Header from "../components/Header";
 import Link from "next/link";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home, ArrowLeft, Video, Image as ImageIcon } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { MediaType } from "@/types/media";
 
-export default function VideoUploadPage() {
+export default function UploadPage() {
+  const searchParams = useSearchParams();
+  const [mediaType, setMediaType] = useState<MediaType>(MediaType.VIDEO);
+
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'image') {
+      setMediaType(MediaType.IMAGE);
+    } else {
+      setMediaType(MediaType.VIDEO);
+    }
+  }, [searchParams]);
   return (
     <>
       <Header />
@@ -34,7 +49,40 @@ export default function VideoUploadPage() {
         </div>
         
         <div className="container mx-auto px-4 py-12">
-          <VideoUploadForm />
+          {/* Media Type Selector */}
+          <div className="flex justify-center mb-8">
+            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+              <button
+                onClick={() => setMediaType(MediaType.VIDEO)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-md transition-all duration-200 ${
+                  mediaType === MediaType.VIDEO
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Video className="w-5 h-5" />
+                Upload Video
+              </button>
+              <button
+                onClick={() => setMediaType(MediaType.IMAGE)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-md transition-all duration-200 ${
+                  mediaType === MediaType.IMAGE
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <ImageIcon className="w-5 h-5" />
+                Upload Image
+              </button>
+            </div>
+          </div>
+
+          {/* Upload Form */}
+          {mediaType === MediaType.VIDEO ? (
+            <VideoUploadForm />
+          ) : (
+            <ImageUploadForm />
+          )}
         </div>
       </div>
     </>

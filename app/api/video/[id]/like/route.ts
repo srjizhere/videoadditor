@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/db";
+import { connectDB } from "@/lib/db";
 import Video from "@/models/Video";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -44,7 +44,7 @@ export async function POST(
       );
     }
 
-    await connectToDatabase();
+    await connectDB();
 
     // Find the video
     const video = await Video.findById(videoId);
@@ -131,7 +131,7 @@ export async function GET(
       );
     }
 
-    await connectToDatabase();
+    await connectDB();
 
     // Find the video and check if user has liked it
     const video = await Video.findById(videoId).select('likes likedBy');

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/db";
+import { connectDB } from "@/lib/db";
 import Video from "@/models/Video";
 import { ObjectId } from "mongodb";
 import { 
@@ -32,7 +32,7 @@ export async function GET(
       );
     }
 
-    await connectToDatabase();
+    await connectDB();
     
     const video = await Video.findOne({ 
       _id: params.id, 
@@ -77,7 +77,7 @@ export async function DELETE(
       );
     }
 
-    await connectToDatabase();
+    await connectDB();
     
     const video = await Video.findById(params.id);
     

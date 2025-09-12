@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/db";
+import { connectDB } from "@/lib/db";
 import Video from "@/models/Video";
 import { 
   checkRateLimit, 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const skip = (page - 1) * limit;
 
-    await connectToDatabase();
+    await connectDB();
     
     // Get total count for pagination
     const totalVideos = await Video.countDocuments({ isPublic: true });
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await connectToDatabase();
+    await connectDB();
     
     const video = new Video({
       title: body.title,

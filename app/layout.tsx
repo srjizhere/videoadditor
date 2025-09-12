@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VideoEditor Pro - Create Amazing Videos",
-  description: "Professional video editing and sharing platform with AI-powered features",
+  title: "MediaEditor Pro - Create Amazing Media",
+  description: "Professional video and image editing and sharing platform with AI-powered features",
 };
 
 export default function RootLayout({

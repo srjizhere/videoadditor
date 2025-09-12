@@ -14,6 +14,7 @@ export interface IVideo {
   uploader: mongoose.Types.ObjectId;
   uploaderName?: string;
   uploaderEmail?: string;
+  mediaType: 'video';
   controls?: boolean;
   transformation?: {
     height: number;
@@ -38,6 +39,7 @@ const videoSchema = new Schema<IVideo>(
     uploader: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     uploaderName: { type: String },
     uploaderEmail: { type: String },
+    mediaType: { type: String, enum: ['video'], default: 'video' },
     controls: { type: Boolean, default: true },
     transformation: {
       height: { type: Number, default: VIDEO_DIMENSIONS.height },

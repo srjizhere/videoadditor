@@ -2,16 +2,21 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Play, Upload, Sparkles, Users, Zap, Shield } from "lucide-react";
+import { Play, Upload, Sparkles, Users, Zap, Shield, Video, Image as ImageIcon } from "lucide-react";
 import Header from "./components/Header";
 import VideoFeed from "./components/VideoFeed";
+import ImageFeed from "./components/ImageFeed";
 import { useEffect, useState, useCallback, memo } from "react";
 import { IVideo } from "@/models/Video";
+import { IImage } from "@/models/Image";
+import { MediaType } from "@/types/media";
 
 export default function Home() {
   const { data: session } = useSession();
   const [videos, setVideos] = useState<IVideo[]>([]);
+  const [images, setImages] = useState<IImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<MediaType>(MediaType.VIDEO);
 
   const fetchVideos = useCallback(async () => {
     try {
@@ -28,9 +33,32 @@ export default function Home() {
     }
   }, []);
 
+  const fetchImages = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/image?limit=20");
+      if (response.ok) {
+        const data = await response.json();
+        setImages(data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch images:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchMedia = useCallback(async (mediaType: MediaType) => {
+    if (mediaType === MediaType.VIDEO) {
+      await fetchVideos();
+    } else {
+      await fetchImages();
+    }
+  }, [fetchVideos, fetchImages]);
+
   useEffect(() => {
-    fetchVideos();
-  }, [fetchVideos]);
+    fetchMedia(activeTab);
+  }, [fetchMedia, activeTab]);
 
   return (
     <>
@@ -90,12 +118,12 @@ export default function Home() {
           </section>
         )}
 
-        {/* Video Feed Section - Show to all users */}
+        {/* Media Feed Section - Show to all users */}
         <section className="py-12">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold">
-                {session?.user ? "Your Videos" : "Featured Videos"}
+                {session?.user ? "Your Media" : "Featured Media"}
               </h2>
               {session?.user && (
                 <Link
@@ -107,12 +135,48 @@ export default function Home() {
                 </Link>
               )}
             </div>
+
+            {/* Tab Navigation */}
+            <div className="flex space-x-1 mb-8 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
+              <button
+                onClick={() => setActiveTab(MediaType.VIDEO)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+                  activeTab === MediaType.VIDEO
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Video className="w-4 h-4" />
+                Videos
+                {videos.length > 0 && (
+                  <span className="bg-white/20 text-xs px-2 py-1 rounded-full">
+                    {videos.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab(MediaType.IMAGE)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+                  activeTab === MediaType.IMAGE
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <ImageIcon className="w-4 h-4" />
+                Images
+                {images.length > 0 && (
+                  <span className="bg-white/20 text-xs px-2 py-1 rounded-full">
+                    {images.length}
+                  </span>
+                )}
+              </button>
+            </div>
             
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden animate-pulse">
-                    <div className="aspect-[9/16] bg-gray-300 dark:bg-gray-700"></div>
+                    <div className={`${activeTab === MediaType.VIDEO ? 'aspect-[9/16]' : 'aspect-square'} bg-gray-300 dark:bg-gray-700`}></div>
                     <div className="p-4">
                       <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
                       <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
@@ -121,7 +185,13 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <VideoFeed videos={videos} />
+              <>
+                {activeTab === MediaType.VIDEO ? (
+                  <VideoFeed videos={videos} />
+                ) : (
+                  <ImageFeed limit={20} />
+                )}
+              </>
             )}
           </div>
         </section>
@@ -132,7 +202,7 @@ export default function Home() {
             <section className="py-20 bg-white dark:bg-slate-800">
               <div className="container mx-auto px-4">
                 <div className="text-center mb-16">
-                  <h2 className="text-4xl font-bold mb-4">Why Choose VideoEditor Pro?</h2>
+                  <h2 className="text-4xl font-bold mb-4">Why Choose MediaEditor Pro?</h2>
                   <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                     Powerful features designed for creators, professionals, and everyone in between.
                   </p>
@@ -155,7 +225,7 @@ export default function Home() {
                     </div>
                     <h3 className="text-xl font-semibold mb-2">AI-Powered</h3>
                     <p className="text-gray-600 dark:text-gray-300">
-                      Smart editing tools powered by AI to enhance your videos automatically.
+                      Smart editing tools powered by AI to enhance your videos and images automatically.
                     </p>
                   </div>
 
@@ -177,7 +247,7 @@ export default function Home() {
               <div className="container mx-auto px-4 text-center">
                 <h2 className="text-4xl font-bold mb-4">Ready to Create?</h2>
                 <p className="text-xl mb-8 max-w-2xl mx-auto">
-                  Join thousands of creators who trust VideoEditor Pro for their video needs.
+                  Join thousands of creators who trust MediaEditor Pro for their media needs.
                 </p>
                 <Link
                   href="/register"

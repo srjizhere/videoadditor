@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Home, User, Upload } from "lucide-react";
+import { Home, User, Upload, Video, Image as ImageIcon } from "lucide-react";
 import { useNotification } from "./Notification";
 import { useState, useRef, useEffect } from "react";
 
@@ -61,22 +61,34 @@ export default function Header() {
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
               <Home className="w-5 h-5 text-white" />
             </div>
-            VideoEditor Pro
+            MediaEditor Pro
           </Link>
           
           <div className="flex items-center gap-4">
             {session?.user ? (
               <div className="flex items-center gap-4">
-                <Link
-                  href="/upload"
-                  className="hidden sm:inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-medium hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105"
-                  onClick={() =>
-                    showNotification("Welcome to Upload Center", "info")
-                  }
-                >
-                  <Upload className="w-4 h-4" />
-                  Upload
-                </Link>
+                <div className="hidden sm:flex items-center gap-2">
+                  <Link
+                    href="/upload"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-medium hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105"
+                    onClick={() =>
+                      showNotification("Welcome to Upload Center", "info")
+                    }
+                  >
+                    <Video className="w-4 h-4" />
+                    Upload Video
+                  </Link>
+                  <Link
+                    href="/upload?type=image"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded-full font-medium hover:from-green-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105"
+                    onClick={() =>
+                      showNotification("Welcome to Image Upload", "info")
+                    }
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    Upload Image
+                  </Link>
+                </div>
                 
                 <div className="relative" ref={dropdownRef}>
                   <button
@@ -119,8 +131,20 @@ export default function Header() {
                             setIsDropdownOpen(false);
                           }}
                         >
-                          <Upload className="w-4 h-4" />
+                          <Video className="w-4 h-4" />
                           <span>Upload Video</span>
+                        </Link>
+
+                        <Link
+                          href="/upload?type=image"
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                          onClick={() => {
+                            showNotification("Welcome to Image Upload", "info");
+                            setIsDropdownOpen(false);
+                          }}
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                          <span>Upload Image</span>
                         </Link>
 
                         <button
