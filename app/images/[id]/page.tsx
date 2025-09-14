@@ -16,7 +16,7 @@ import {
   User
 } from 'lucide-react';
 import { IImage } from '@/models/Image';
-import { useNotification } from '@/components/Notification';
+import { useNotification } from '@/app/components/Notification';
 
 const ImageDetailPage: React.FC = () => {
   const params = useParams();
@@ -102,7 +102,7 @@ const ImageDetailPage: React.FC = () => {
           likedBy: data.isLiked 
             ? [...prev.likedBy, image._id]
             : prev.likedBy.filter(id => id.toString() !== image._id)
-        } : null);
+        } as IImage : null);
         showNotification(
           data.isLiked ? 'Image liked!' : 'Image unliked!',
           'success'

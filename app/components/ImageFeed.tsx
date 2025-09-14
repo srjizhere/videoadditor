@@ -76,11 +76,19 @@ const ImageFeed: React.FC<ImageFeedProps> = ({
   };
 
   const handleLike = useCallback((imageId: string) => {
-    setImages(prev => prev.map(image => 
-      image._id === imageId 
-        ? { ...image, likes: image.likes + (image.likedBy.some(id => id.toString() === imageId) ? -1 : 1) }
-        : image
-    ));
+    setImages(prev => prev.map(image => {
+      if (image._id === imageId) {
+        const isCurrentlyLiked = image.likedBy.some(id => id.toString() === imageId);
+        return {
+          ...image,
+          likes: image.likes + (isCurrentlyLiked ? -1 : 1),
+          likedBy: isCurrentlyLiked 
+            ? image.likedBy.filter(id => id.toString() !== imageId)
+            : [...image.likedBy, imageId as any]
+        } as IImage;
+      }
+      return image;
+    }));
   }, []);
 
   const handleShare = useCallback((imageId: string) => {
