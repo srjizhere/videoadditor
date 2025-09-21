@@ -67,7 +67,7 @@ export default function VideoDetailPage() {
         setViews(data.video.views || 0);
         setIsLiked(
           data.video.likedBy?.some(
-            (id: any) => id.toString() === data.video.uploader?.toString()
+            (id: unknown) => (id as string).toString() === data.video.uploader?.toString()
           ) || false
         );
       } catch (error) {

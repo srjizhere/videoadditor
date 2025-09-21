@@ -8,7 +8,7 @@ import { logSecurityEvent } from '@/lib/security';
 // POST /api/images/[id]/like - Like/unlike an image
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,8 +21,9 @@ export async function POST(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const image = await Image.findById(params.id);
+    const image = await Image.findById(id);
     if (!image) {
       return NextResponse.json(
         { success: false, error: 'Image not found' },
@@ -31,29 +32,29 @@ export async function POST(
     }
 
     const userId = session.user.id;
-    const isLiked = image.likedBy.some(id => id.toString() === userId);
+    const isLiked = image.likedBy.some((userIdObj: unknown) => (userIdObj as string).toString() === userId);
 
     if (isLiked) {
       // Unlike the image
-      await Image.findByIdAndUpdate(params.id, {
+      await Image.findByIdAndUpdate(id, {
         $pull: { likedBy: userId },
         $inc: { likes: -1 }
       });
     } else {
       // Like the image
-      await Image.findByIdAndUpdate(params.id, {
+      await Image.findByIdAndUpdate(id, {
         $addToSet: { likedBy: userId },
         $inc: { likes: 1 }
       });
     }
 
     // Fetch updated image
-    const updatedImage = await Image.findById(params.id)
+    const updatedImage = await Image.findById(id)
       .populate('uploader', 'name email')
       .lean();
 
     logSecurityEvent('IMAGE_LIKE_SUCCESS', {
-      imageId: params.id,
+      imageId: id,
       userId,
       action: isLiked ? 'unlike' : 'like'
     }, request);
@@ -66,7 +67,7 @@ export async function POST(
 
   } catch (error) {
     console.error('Error liking image:', error);
-    logSecurityEvent('IMAGE_LIKE_ERROR', { error: error.message }, request);
+    logSecurityEvent('IMAGE_LIKE_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, request);
     return NextResponse.json(
       { success: false, error: 'Failed to like image' },
       { status: 500 }

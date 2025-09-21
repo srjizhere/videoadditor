@@ -6,6 +6,7 @@ import { IImage } from '@/models/Image';
 import { useNotification } from './Notification';
 
 interface ImageFeedProps {
+  images?: IImage[];
   limit?: number;
   category?: string;
   showPagination?: boolean;
@@ -13,6 +14,7 @@ interface ImageFeedProps {
 }
 
 const ImageFeed: React.FC<ImageFeedProps> = ({
+  images: propImages,
   limit = 20,
   category,
   showPagination = true,
@@ -64,8 +66,17 @@ const ImageFeed: React.FC<ImageFeedProps> = ({
   }, [limit, category, showNotification]);
 
   useEffect(() => {
-    fetchImages(1, false);
-  }, [fetchImages]);
+    if (propImages) {
+      // Use provided images
+      setImages(propImages);
+      setLoading(false);
+      setError(null);
+      setHasMore(false); // No pagination when using provided images
+    } else {
+      // Fetch images independently
+      fetchImages(1, false);
+    }
+  }, [fetchImages, propImages]);
 
   const handleLoadMore = () => {
     if (!loading && hasMore) {
@@ -84,14 +95,14 @@ const ImageFeed: React.FC<ImageFeedProps> = ({
           likes: image.likes + (isCurrentlyLiked ? -1 : 1),
           likedBy: isCurrentlyLiked 
             ? image.likedBy.filter(id => id.toString() !== imageId)
-            : [...image.likedBy, imageId as any]
+            : [...image.likedBy, imageId as string]
         } as IImage;
       }
       return image;
     }));
   }, []);
 
-  const handleShare = useCallback((imageId: string) => {
+  const handleShare = useCallback(() => {
     showNotification('Share link copied to clipboard!', 'success');
   }, [showNotification]);
 
@@ -145,24 +156,25 @@ const ImageFeed: React.FC<ImageFeedProps> = ({
   }
 
   return (
-    <div className={className}>
+    <div className={`max-w-7xl mx-auto px-4 ${className}`}>
       {/* Images Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
         {images.map((image) => (
-          <ImageComponent
-            key={image._id}
-            image={image}
-            onLike={handleLike}
-            onShare={handleShare}
-            onView={handleView}
-            aspectRatio="auto"
-            size="md"
-          />
+          <div key={image._id} className="w-full max-w-sm">
+            <ImageComponent
+              image={image}
+              onLike={handleLike}
+              onShare={handleShare}
+              onView={handleView}
+              aspectRatio="auto"
+              size="md"
+            />
+          </div>
         ))}
       </div>
 
-      {/* Load More Button */}
-      {showPagination && hasMore && (
+      {/* Load More Button - Only show when not using provided images */}
+      {!propImages && showPagination && hasMore && (
         <div className="flex justify-center mt-8">
           <button
             onClick={handleLoadMore}

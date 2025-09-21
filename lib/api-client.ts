@@ -4,14 +4,14 @@ export type VideoFormData = Omit<IVideo, "_id">;
 
 type FetchOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
-  body?: any;
+  body?: unknown;
   headers?: Record<string, string>;
   cache?: boolean;
 };
 
 class ApiClient {
-  private requestCache = new Map<string, { data: any; timestamp: number }>();
-  private pendingRequests = new Map<string, Promise<any>>();
+  private requestCache = new Map<string, { data: unknown; timestamp: number }>();
+  private pendingRequests = new Map<string, Promise<unknown>>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   private getCacheKey(endpoint: string, options: FetchOptions): string {
@@ -29,13 +29,13 @@ class ApiClient {
     if (cache && method === 'GET') {
       const cached = this.requestCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-        return cached.data;
+        return cached.data as T;
       }
     }
 
     // Check if request is already pending
     if (this.pendingRequests.has(cacheKey)) {
-      return this.pendingRequests.get(cacheKey)!;
+      return this.pendingRequests.get(cacheKey)! as Promise<T>;
     }
 
     const defaultHeaders = {

@@ -25,22 +25,24 @@ export default function VideoUploadForm() {
   });
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<any>(null);
+  const [uploadedFile, setUploadedFile] = useState<unknown>(null);
   const { showNotification } = useNotification();
 
-  const handleVideoUpload = (response: any) => {
+  const handleVideoUpload = (response: unknown) => {
+    const res = response as { url: string };
     setVideoData(prev => ({
       ...prev,
-      videoUrl: response.url,
+      videoUrl: res.url,
     }));
     setUploadedFile(response);
     showNotification("Video uploaded successfully!", "success");
   };
 
-  const handleThumbnailUpload = (response: any) => {
+  const handleThumbnailUpload = (response: unknown) => {
+    const res = response as { url: string };
     setVideoData(prev => ({
       ...prev,
-      thumbnailUrl: response.url,
+      thumbnailUrl: res.url,
     }));
     showNotification("Thumbnail uploaded successfully!", "success");
   };
@@ -96,9 +98,9 @@ export default function VideoUploadForm() {
       setTimeout(() => {
         router.push("/");
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Video save error:", error);
-      showNotification(error.message || "Failed to save video. Please try again.", "error");
+      showNotification(error instanceof Error ? error.message : "Failed to save video. Please try again.", "error");
     } finally {
       setIsUploading(false);
     }
@@ -106,27 +108,28 @@ export default function VideoUploadForm() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="card bg-base-100 shadow-2xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-white">
+        <div className="card-body bg-gradient-to-r from-primary to-secondary text-primary-content p-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-primary-content/20 rounded-2xl flex items-center justify-center">
               <Video className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Upload New Video</h1>
-              <p className="text-blue-100">Share your creativity with the world</p>
+              <h1 className="card-title text-3xl">Upload New Video</h1>
+              <p className="text-primary-content/80">Share your creativity with the world</p>
             </div>
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="card-body p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Video Upload Section */}
             <div className="space-y-4">
-              <label className="block text-lg font-semibold text-gray-900 dark:text-white">
-                Video File *
-              </label>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Video File *</span>
+                </label>
               
               {!videoData.videoUrl ? (
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-12 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
@@ -160,7 +163,7 @@ export default function VideoUploadForm() {
                         Video uploaded successfully!
                       </h4>
                       <p className="text-sm text-green-700 dark:text-green-300">
-                        {uploadedFile?.name || "Video file"}
+                        {(uploadedFile as { name?: string })?.name || "Video file"}
                       </p>
                     </div>
                     <button
@@ -180,15 +183,16 @@ export default function VideoUploadForm() {
 
             {/* Thumbnail Upload Section */}
             <div className="space-y-4">
-              <label className="block text-lg font-semibold text-gray-900 dark:text-white">
-                Thumbnail Image (Optional)
-              </label>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Thumbnail Image (Optional)</span>
+                </label>
               
               {!videoData.thumbnailUrl ? (
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
                   <div className="space-y-3">
                     <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">
-                      <Image className="w-6 h-6 text-white" />
+                      <Image className="w-6 h-6 text-white" aria-label="Upload thumbnail" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
@@ -231,43 +235,43 @@ export default function VideoUploadForm() {
 
             {/* Video Details */}
             <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-900 dark:text-white">
-                  Video Title *
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Video Title *</span>
                 </label>
                 <input
                   type="text"
                   value={videoData.title}
                   onChange={(e) => setVideoData(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Enter an engaging title for your video"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                  className="input input-bordered w-full"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-900 dark:text-white">
-                  Duration
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Duration</span>
                 </label>
                 <input
                   type="text"
-                  value={uploadedFile?.duration || "Auto-detected"}
+                  value={(uploadedFile as { duration?: string })?.duration || "Auto-detected"}
                   disabled
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-slate-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  className="input input-bordered w-full input-disabled"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-900 dark:text-white">
-                Description *
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Description *</span>
               </label>
               <textarea
                 value={videoData.description}
                 onChange={(e) => setVideoData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Describe your video content, what viewers can expect to see..."
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all resize-none"
+                className="textarea textarea-bordered w-full resize-none"
                 required
               />
             </div>
@@ -304,14 +308,14 @@ export default function VideoUploadForm() {
                   setUploadedFile(null);
                   setUploadProgress(0);
                 }}
-                className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors font-medium"
+                className="btn btn-outline"
               >
                 Reset
               </button>
               <button
                 type="submit"
                 disabled={isUploading || !videoData.videoUrl}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold flex items-center gap-2"
+                className="btn btn-primary btn-lg gap-2"
               >
                 {isUploading ? (
                   <>

@@ -61,13 +61,13 @@ function LoginPage() {
                 </div>
               )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Email address
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Email address</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                    <Mail className="h-5 w-5 text-base-content/50" />
                   </div>
                   <input
                     id="email"
@@ -77,19 +77,19 @@ function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                    className="input input-bordered w-full pl-10"
                     placeholder="Enter your email"
                   />
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Password
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Password</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-5 w-5 text-base-content/50" />
                   </div>
                   <input
                     id="password"
@@ -99,7 +99,7 @@ function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                    className="input input-bordered w-full pl-10 pr-12"
                     placeholder="Enter your password"
                   />
                   <button
@@ -108,29 +108,29 @@ function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                      <EyeOff className="h-5 w-5 text-base-content/50 hover:text-base-content" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                      <Eye className="h-5 w-5 text-base-content/50 hover:text-base-content" />
                     )}
                   </button>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                    Remember me
+                <div className="form-control">
+                  <label className="label cursor-pointer">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="checkbox checkbox-primary"
+                    />
+                    <span className="label-text ml-2">Remember me</span>
                   </label>
                 </div>
 
                 <div className="text-sm">
-                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
+                  <a href="#" className="link link-primary">
                     Forgot your password?
                   </a>
                 </div>
@@ -140,7 +140,7 @@ function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+                  className="btn btn-primary w-full gap-2"
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -155,7 +155,7 @@ function LoginPage() {
 
               <div className="text-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <Link
                     href="/register"
                     className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 transition-colors"

@@ -2,7 +2,7 @@ import { Video } from "@imagekit/next";
 import Link from "next/link";
 import { IVideo } from "@/models/Video";
 import { Play, Heart, Share2, MoreVertical, User } from "lucide-react";
-import { useState, useRef, useCallback, memo, useEffect } from "react";
+import { useState, useRef, memo, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
 const VideoComponent = memo(function VideoComponent({ video }: { video: IVideo }) {
@@ -74,7 +74,7 @@ const VideoComponent = memo(function VideoComponent({ video }: { video: IVideo }
 
   return (
     <div 
-      className="group bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:scale-[1.02]"
+      className="card bg-base-100 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:scale-[1.02]"
     >
       {/* Video Thumbnail */}
       <div className="relative aspect-[9/16] overflow-hidden">
@@ -124,17 +124,17 @@ const VideoComponent = memo(function VideoComponent({ video }: { video: IVideo }
       </div>
 
       {/* Video Info */}
-      <div className="p-4">
+      <div className="card-body p-4">
         <Link
           href={`/videos/${video._id}`}
-          className="block group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+          className="block group-hover:text-primary transition-colors"
         >
-          <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:underline">
+          <h3 className="card-title text-lg mb-2 line-clamp-2 group-hover:underline">
             {video.title}
           </h3>
         </Link>
 
-        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+        <p className="text-base-content/70 text-sm mb-4 line-clamp-2">
           {video.description}
         </p>
 

@@ -22,6 +22,8 @@ const nextConfig: NextConfig = {
     // optimizePackageImports: ['@imagekit/next', 'lucide-react'],
   },
   
+  // CSS is handled automatically by Next.js
+  
   // Headers for security and caching
   async headers() {
     return [

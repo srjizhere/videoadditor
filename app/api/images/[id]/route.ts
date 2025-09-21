@@ -2,18 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/db';
-import Image from '@/models/Image';
+import Image, { IImage } from '@/models/Image';
 import { logSecurityEvent } from '@/lib/security';
 
 // GET /api/images/[id] - Get single image by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
-    const image = await Image.findById(params.id)
+    const image = await Image.findById(id)
       .populate('uploader', 'name email')
       .lean();
 
@@ -26,7 +27,7 @@ export async function GET(
 
     // Check if image is public or user owns it
     const session = await getServerSession(authOptions);
-    if (!image.isPublic && (!session?.user || image.uploader.toString() !== session.user.id)) {
+    if (!(image as unknown as IImage).isPublic && (!session?.user || (image as unknown as IImage).uploader.toString() !== session.user.id)) {
       return NextResponse.json(
         { success: false, error: 'Access denied' },
         { status: 403 }
@@ -34,10 +35,10 @@ export async function GET(
     }
 
     // Increment view count
-    await Image.findByIdAndUpdate(params.id, { $inc: { views: 1 } });
+    await Image.findByIdAndUpdate(id, { $inc: { views: 1 } });
 
     logSecurityEvent('IMAGE_VIEW_SUCCESS', {
-      imageId: params.id,
+      imageId: id,
       viewer: session?.user?.id || 'anonymous'
     }, request);
 
@@ -48,7 +49,7 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching image:', error);
-    logSecurityEvent('IMAGE_FETCH_ERROR', { error: error.message }, request);
+    logSecurityEvent('IMAGE_FETCH_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, request);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch image' },
       { status: 500 }
@@ -59,7 +60,7 @@ export async function GET(
 // PUT /api/images/[id] - Update image
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -72,8 +73,9 @@ export async function PUT(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const image = await Image.findById(params.id);
+    const image = await Image.findById(id);
     if (!image) {
       return NextResponse.json(
         { success: false, error: 'Image not found' },
@@ -99,7 +101,7 @@ export async function PUT(
     } = body;
 
     // Update allowed fields
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title.trim();
     if (description !== undefined) updateData.description = description?.trim();
     if (tags !== undefined) updateData.tags = tags.filter((tag: string) => tag.trim().length > 0);
@@ -107,13 +109,13 @@ export async function PUT(
     if (isPublic !== undefined) updateData.isPublic = isPublic;
 
     const updatedImage = await Image.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true, runValidators: true }
     ).populate('uploader', 'name email');
 
     logSecurityEvent('IMAGE_UPDATE_SUCCESS', {
-      imageId: params.id,
+      imageId: id,
       uploader: session.user.id,
       updatedFields: Object.keys(updateData)
     }, request);
@@ -125,7 +127,7 @@ export async function PUT(
 
   } catch (error) {
     console.error('Error updating image:', error);
-    logSecurityEvent('IMAGE_UPDATE_ERROR', { error: error.message }, request);
+    logSecurityEvent('IMAGE_UPDATE_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, request);
     return NextResponse.json(
       { success: false, error: 'Failed to update image' },
       { status: 500 }
@@ -136,7 +138,7 @@ export async function PUT(
 // DELETE /api/images/[id] - Delete image
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -149,8 +151,9 @@ export async function DELETE(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const image = await Image.findById(params.id);
+    const image = await Image.findById(id);
     if (!image) {
       return NextResponse.json(
         { success: false, error: 'Image not found' },
@@ -166,10 +169,10 @@ export async function DELETE(
       );
     }
 
-    await Image.findByIdAndDelete(params.id);
+    await Image.findByIdAndDelete(id);
 
     logSecurityEvent('IMAGE_DELETE_SUCCESS', {
-      imageId: params.id,
+      imageId: id,
       uploader: session.user.id,
       title: image.title
     }, request);
@@ -181,7 +184,7 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Error deleting image:', error);
-    logSecurityEvent('IMAGE_DELETE_ERROR', { error: error.message }, request);
+    logSecurityEvent('IMAGE_DELETE_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, request);
     return NextResponse.json(
       { success: false, error: 'Failed to delete image' },
       { status: 500 }

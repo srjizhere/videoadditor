@@ -11,8 +11,10 @@ import {
 // GET /api/videos/[id] - Get a single video by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+  
   try {
     // Rate limiting for video views
     const rateLimit = await checkRateLimit(request, 'video-view');
@@ -24,8 +26,8 @@ export async function GET(
     }
 
     // Validate video ID
-    if (!params.id || !validateVideoId(params.id)) {
-      logSecurityEvent('INVALID_VIDEO_ID', { videoId: params.id }, request);
+    if (!id || !validateVideoId(id)) {
+      logSecurityEvent('INVALID_VIDEO_ID', { videoId: id }, request);
       return NextResponse.json(
         { error: "Invalid video ID" },
         { status: 400 }
@@ -35,12 +37,12 @@ export async function GET(
     await connectDB();
     
     const video = await Video.findOne({ 
-      _id: params.id, 
+      _id: id, 
       isPublic: true 
     }).select('-__v').lean();
     
     if (!video) {
-      logSecurityEvent('VIDEO_NOT_FOUND', { videoId: params.id }, request);
+      logSecurityEvent('VIDEO_NOT_FOUND', { videoId: id }, request);
       return NextResponse.json(
         { error: "Video not found" },
         { status: 404 }
@@ -48,14 +50,14 @@ export async function GET(
     }
 
     // Increment view count asynchronously (don't wait for it)
-    Video.findByIdAndUpdate(params.id, { $inc: { views: 1 } }).catch(console.error);
+    Video.findByIdAndUpdate(id, { $inc: { views: 1 } }).catch(console.error);
 
-    logSecurityEvent('VIDEO_VIEWED', { videoId: params.id }, request);
+    logSecurityEvent('VIDEO_VIEWED', { videoId: id }, request);
 
     return NextResponse.json({ video }, { status: 200 });
   } catch (error) {
     console.error("Error fetching video:", error);
-    logSecurityEvent('VIDEO_FETCH_ERROR', { error: error.message, videoId: params.id }, request);
+    logSecurityEvent('VIDEO_FETCH_ERROR', { error: error instanceof Error ? error.message : 'Unknown error', videoId: id }, request);
     return NextResponse.json(
       { error: "Failed to fetch video" },
       { status: 500 }
@@ -66,11 +68,13 @@ export async function GET(
 // DELETE /api/videos/[id] - Delete a video (only by owner)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+
     // Validate video ID
-    if (!params.id || !ObjectId.isValid(params.id)) {
+    if (!id || !ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid video ID" },
         { status: 400 }
@@ -79,7 +83,7 @@ export async function DELETE(
 
     await connectDB();
     
-    const video = await Video.findById(params.id);
+    const video = await Video.findById(id);
     
     if (!video) {
       return NextResponse.json(
@@ -91,7 +95,7 @@ export async function DELETE(
     // TODO: Add authentication check here
     // For now, allow deletion (in production, check if user owns the video)
     
-    await Video.findByIdAndDelete(params.id);
+    await Video.findByIdAndDelete(id);
 
     return NextResponse.json(
       { message: "Video deleted successfully" },

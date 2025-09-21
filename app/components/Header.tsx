@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Home, User, Upload, Video, Image as ImageIcon } from "lucide-react";
+import { Home, User, Video, Image as ImageIcon } from "lucide-react";
 import { useNotification } from "./Notification";
 import { useState, useRef, useEffect } from "react";
 
@@ -70,7 +70,7 @@ export default function Header() {
                 <div className="hidden sm:flex items-center gap-2">
                   <Link
                     href="/upload"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-medium hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105"
+                    className="btn btn-primary btn-sm gap-2"
                     onClick={() =>
                       showNotification("Welcome to Upload Center", "info")
                     }
@@ -80,7 +80,7 @@ export default function Header() {
                   </Link>
                   <Link
                     href="/upload?type=image"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded-full font-medium hover:from-green-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105"
+                    className="btn btn-secondary btn-sm gap-2"
                     onClick={() =>
                       showNotification("Welcome to Image Upload", "info")
                     }
@@ -175,7 +175,7 @@ export default function Header() {
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-medium hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105"
+                  className="btn btn-primary btn-sm gap-2"
                 >
                   <User className="w-4 h-4" />
                   Get Started

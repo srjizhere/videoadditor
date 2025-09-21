@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
 
     // Build query
-    const query: any = { isPublic: true };
+    const query: Record<string, unknown> = { isPublic: true };
     
     if (category) {
       query.category = category;
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build sort object
-    const sort: any = {};
+    const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     // Execute query with pagination
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching images:', error);
-    logSecurityEvent('IMAGE_FETCH_ERROR', { error: error.message }, request);
+    logSecurityEvent('IMAGE_FETCH_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, request);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch images' },
       { status: 500 }
@@ -116,14 +116,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate image URL format
-    const imageUrlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)$/i;
+    // Validate image URL format - support both direct image URLs and ImageKit URLs
+    const imageUrlPattern = /^https?:\/\/.+(\.(jpg|jpeg|png|webp|gif)|[?&]tr=)/i;
     if (!imageUrlPattern.test(imageUrl)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid image URL format' },
+        { success: false, error: 'Invalid image URL format. Please upload a valid image file.' },
         { status: 400 }
       );
     }
+
+    // Debug session data
+    console.log('Session user:', {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email
+    });
 
     // Create image document
     const image = new Image({
@@ -132,7 +139,7 @@ export async function POST(request: NextRequest) {
       imageUrl,
       thumbnailUrl,
       uploader: session.user.id,
-      uploaderName: session.user.name || session.user.email.split('@')[0],
+      uploaderName: session.user.name || session.user.email?.split('@')[0] || 'Unknown',
       uploaderEmail: session.user.email,
       tags: tags.filter(tag => tag.trim().length > 0),
       category,
@@ -140,6 +147,13 @@ export async function POST(request: NextRequest) {
       dimensions,
       fileSize,
       format: format.toLowerCase()
+    });
+
+    console.log('Image document created:', {
+      title: image.title,
+      imageUrl: image.imageUrl,
+      uploader: image.uploader,
+      dimensions: image.dimensions
     });
 
     await image.save();
@@ -157,7 +171,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error creating image:', error);
-    logSecurityEvent('IMAGE_CREATE_ERROR', { error: error.message }, request);
+    logSecurityEvent('IMAGE_CREATE_ERROR', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error instanceof Error ? error.stack : undefined
+    }, request);
     return NextResponse.json(
       { success: false, error: 'Failed to create image' },
       { status: 500 }

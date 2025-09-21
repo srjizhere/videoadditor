@@ -23,6 +23,37 @@ export interface IImage extends Document {
   };
   fileSize: number;
   format: 'jpg' | 'jpeg' | 'png' | 'webp' | 'gif';
+  // AI-generated data
+  aiTags?: Array<{
+    tag: string;
+    confidence: number;
+    category: string;
+  }>;
+  aiCategory?: 'nature' | 'portrait' | 'landscape' | 'abstract' | 'street' | 'macro' | 'food' | 'animal' | 'architecture' | 'other';
+  aiCategoryConfidence?: number;
+  faceDetection?: {
+    faces: Array<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      confidence: number;
+    }>;
+    faceCount: number;
+  };
+  backgroundRemoved?: boolean;
+  backgroundRemovedUrl?: string;
+  qualityEnhanced?: boolean;
+  qualityEnhancedUrl?: string;
+  contentModeration?: {
+    isAppropriate: boolean;
+    confidence: number;
+    categories: Array<{
+      name: string;
+      confidence: number;
+    }>;
+    reasons: string[];
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,7 +75,8 @@ const imageSchema = new Schema<IImage>({
     required: [true, 'Image URL is required'],
     validate: {
       validator: function(v: string) {
-        return /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)$/i.test(v);
+        // Support both direct image URLs and ImageKit URLs
+        return /^https?:\/\/.+(\.(jpg|jpeg|png|webp|gif)|[?&]tr=)/i.test(v);
       },
       message: 'Invalid image URL format'
     }
@@ -53,7 +85,7 @@ const imageSchema = new Schema<IImage>({
     type: String,
     validate: {
       validator: function(v: string) {
-        return !v || /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)$/i.test(v);
+        return !v || /^https?:\/\/.+(\.(jpg|jpeg|png|webp|gif)|[?&]tr=)/i.test(v);
       },
       message: 'Invalid thumbnail URL format'
     }
@@ -133,6 +165,68 @@ const imageSchema = new Schema<IImage>({
     type: String,
     enum: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
     required: [true, 'Image format is required']
+  },
+  // AI-generated data
+  aiTags: [{
+    tag: { type: String, required: true },
+    confidence: { type: Number, min: 0, max: 1, required: true },
+    category: { type: String, required: true }
+  }],
+  aiCategory: {
+    type: String,
+    enum: ['nature', 'portrait', 'landscape', 'abstract', 'street', 'macro', 'food', 'animal', 'architecture', 'other'],
+    default: null
+  },
+  aiCategoryConfidence: {
+    type: Number,
+    min: 0,
+    max: 1,
+    default: null
+  },
+  faceDetection: {
+    faces: [{
+      x: { type: Number, required: true },
+      y: { type: Number, required: true },
+      width: { type: Number, required: true },
+      height: { type: Number, required: true },
+      confidence: { type: Number, min: 0, max: 1, required: true }
+    }],
+    faceCount: { type: Number, default: 0 }
+  },
+  backgroundRemoved: {
+    type: Boolean,
+    default: false
+  },
+  backgroundRemovedUrl: {
+    type: String,
+    validate: {
+      validator: function(v: string) {
+        return !v || /^https?:\/\/.+(\.(jpg|jpeg|png|webp|gif)|[?&]tr=)/i.test(v);
+      },
+      message: 'Invalid background removed URL format'
+    }
+  },
+  qualityEnhanced: {
+    type: Boolean,
+    default: false
+  },
+  qualityEnhancedUrl: {
+    type: String,
+    validate: {
+      validator: function(v: string) {
+        return !v || /^https?:\/\/.+(\.(jpg|jpeg|png|webp|gif)|[?&]tr=)/i.test(v);
+      },
+      message: 'Invalid quality enhanced URL format'
+    }
+  },
+  contentModeration: {
+    isAppropriate: { type: Boolean, default: true },
+    confidence: { type: Number, min: 0, max: 1, default: 1 },
+    categories: [{
+      name: { type: String, required: true },
+      confidence: { type: Number, min: 0, max: 1, required: true }
+    }],
+    reasons: [{ type: String }]
   }
 }, {
   timestamps: true,

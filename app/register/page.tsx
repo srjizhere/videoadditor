@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle } from "lucide-react";
 import Header from "../components/Header";
 
 function RegisterPage() {
@@ -63,8 +63,8 @@ function RegisterPage() {
       setTimeout(() => {
       router.push("/login");
       }, 2000);
-    } catch (error: any) {
-      setError(error.message || "Registration failed. Please try again.");
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -123,35 +123,35 @@ function RegisterPage() {
                 </div>
               )}
 
-    <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Email address
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Email address</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                    <Mail className="h-5 w-5 text-base-content/50" />
                   </div>
-        <input
+                  <input
                     id="email"
                     name="email"
-          type="email"
+                    type="email"
                     autoComplete="email"
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                    className="input input-bordered w-full pl-10"
                     placeholder="Enter your email"
                   />
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Password
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Password</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-5 w-5 text-base-content/50" />
                   </div>
                   <input
                     id="password"
@@ -161,7 +161,7 @@ function RegisterPage() {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                    className="input input-bordered w-full pl-10 pr-12"
                     placeholder="Create a password"
                   />
                   <button
@@ -170,26 +170,26 @@ function RegisterPage() {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                      <EyeOff className="h-5 w-5 text-base-content/50 hover:text-base-content" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                      <Eye className="h-5 w-5 text-base-content/50 hover:text-base-content" />
                     )}
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Must be at least 6 characters long
-                </p>
+                <label className="label">
+                  <span className="label-text-alt">Must be at least 6 characters long</span>
+                </label>
               </div>
 
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Confirm Password
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Confirm Password</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-5 w-5 text-base-content/50" />
                   </div>
-        <input
+                  <input
                     id="confirmPassword"
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
@@ -197,7 +197,7 @@ function RegisterPage() {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                    className="input input-bordered w-full pl-10 pr-12"
                     placeholder="Confirm your password"
                   />
                   <button
@@ -206,31 +206,33 @@ function RegisterPage() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                      <EyeOff className="h-5 w-5 text-base-content/50 hover:text-base-content" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                      <Eye className="h-5 w-5 text-base-content/50 hover:text-base-content" />
                     )}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center">
-        <input
-                  id="terms"
-                  name="terms"
-                  type="checkbox"
-                  required
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
-                />
-                <label htmlFor="terms" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                  I agree to the{" "}
-                  <a href="#" className="text-blue-600 hover:text-blue-500 dark:text-blue-400">
-                    Terms of Service
-                  </a>{" "}
-                  and{" "}
-                  <a href="#" className="text-blue-600 hover:text-blue-500 dark:text-blue-400">
-                    Privacy Policy
-                  </a>
+              <div className="form-control">
+                <label className="label cursor-pointer">
+                  <input
+                    id="terms"
+                    name="terms"
+                    type="checkbox"
+                    required
+                    className="checkbox checkbox-primary"
+                  />
+                  <span className="label-text ml-2">
+                    I agree to the{" "}
+                    <a href="#" className="link link-primary">
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a href="#" className="link link-primary">
+                      Privacy Policy
+                    </a>
+                  </span>
                 </label>
               </div>
 
@@ -238,7 +240,7 @@ function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+                  className="btn btn-primary w-full gap-2"
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -268,7 +270,7 @@ function RegisterPage() {
           {/* Benefits */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">
-              What you'll get:
+              What you&apos;ll get:
             </h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3">

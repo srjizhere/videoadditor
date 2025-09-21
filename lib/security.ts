@@ -72,30 +72,38 @@ export function sanitizeInput(input: string): string {
     .substring(0, 1000); // Limit length
 }
 
-export function validateVideoData(data: any): { valid: boolean; errors: string[] } {
+export function validateVideoData(data: unknown): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  if (!data.title || typeof data.title !== 'string' || data.title.trim().length === 0) {
+  // Type guard to check if data is an object
+  if (!data || typeof data !== 'object' || data === null) {
+    errors.push('Invalid data format');
+    return { valid: false, errors };
+  }
+  
+  const videoData = data as Record<string, unknown>;
+  
+  if (!videoData.title || typeof videoData.title !== 'string' || videoData.title.trim().length === 0) {
     errors.push('Title is required');
-  } else if (data.title.length > 200) {
+  } else if (videoData.title.length > 200) {
     errors.push('Title must be less than 200 characters');
   }
   
-  if (!data.description || typeof data.description !== 'string') {
+  if (!videoData.description || typeof videoData.description !== 'string') {
     errors.push('Description is required');
-  } else if (data.description.length > 2000) {
+  } else if (videoData.description.length > 2000) {
     errors.push('Description must be less than 2000 characters');
   }
   
-  if (!data.videoUrl || typeof data.videoUrl !== 'string') {
+  if (!videoData.videoUrl || typeof videoData.videoUrl !== 'string') {
     errors.push('Valid video URL is required');
-  } else if (!isValidUrl(data.videoUrl)) {
+  } else if (!isValidUrl(videoData.videoUrl)) {
     errors.push('Invalid video URL format');
   }
   
-  if (!data.thumbnailUrl || typeof data.thumbnailUrl !== 'string') {
+  if (!videoData.thumbnailUrl || typeof videoData.thumbnailUrl !== 'string') {
     errors.push('Valid thumbnail URL is required');
-  } else if (!isValidUrl(data.thumbnailUrl)) {
+  } else if (!isValidUrl(videoData.thumbnailUrl)) {
     errors.push('Invalid thumbnail URL format');
   }
   
@@ -124,7 +132,7 @@ export function getClientIP(request: NextRequest): string {
 
 export function logSecurityEvent(
   event: string,
-  details: any,
+  details: unknown,
   request: NextRequest
 ) {
   const ip = getClientIP(request);
@@ -134,6 +142,6 @@ export function logSecurityEvent(
     ip,
     userAgent,
     timestamp: new Date().toISOString(),
-    ...details
+    ...(typeof details === 'object' && details !== null ? details : { details })
   });
 }

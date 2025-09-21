@@ -29,6 +29,7 @@ const ImageComponent: React.FC<ImageComponentProps> = ({
 }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const { showNotification } = useNotification();
 
   useEffect(() => {
@@ -67,9 +68,12 @@ const ImageComponent: React.FC<ImageComponentProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [image._id, isLiked, isLoading, onLike, showNotification]);
+  }, [image._id, isLoading, onLike, showNotification]);
 
   const handleShare = useCallback(async () => {
+    if (isSharing) return; // Prevent concurrent share operations
+    
+    setIsSharing(true);
     try {
       if (navigator.share) {
         await navigator.share({
@@ -77,6 +81,7 @@ const ImageComponent: React.FC<ImageComponentProps> = ({
           text: image.description || '',
           url: `${window.location.origin}/images/${image._id}`,
         });
+        showNotification('Shared successfully!', 'success');
       } else {
         await navigator.clipboard.writeText(`${window.location.origin}/images/${image._id}`);
         showNotification('Link copied to clipboard!', 'success');
@@ -84,9 +89,19 @@ const ImageComponent: React.FC<ImageComponentProps> = ({
       onShare?.(image._id);
     } catch (error) {
       console.error('Error sharing image:', error);
-      showNotification('Failed to share image', 'error');
+      // Check if it's the specific InvalidStateError for concurrent shares
+      if (error instanceof Error && error.name === 'InvalidStateError') {
+        showNotification('Please wait for the previous share to complete', 'warning');
+      } else if (error instanceof Error && error.name === 'AbortError') {
+        // User cancelled the share, don't show error
+        console.log('Share cancelled by user');
+      } else {
+        showNotification('Failed to share image', 'error');
+      }
+    } finally {
+      setIsSharing(false);
     }
-  }, [image, onShare, showNotification]);
+  }, [image, onShare, showNotification, isSharing]);
 
   const handleView = useCallback(() => {
     onView?.(image._id);
@@ -143,7 +158,7 @@ const ImageComponent: React.FC<ImageComponentProps> = ({
   };
 
   return (
-    <div className={`group relative bg-gray-800 rounded-lg overflow-hidden ${className}`}>
+    <div className={`card bg-base-100 shadow-lg overflow-hidden group ${className}`}>
       {/* Image Container */}
       <div 
         className={`relative ${getSizeClasses()} ${getAspectRatioClass()} cursor-pointer`}
@@ -198,13 +213,13 @@ const ImageComponent: React.FC<ImageComponentProps> = ({
       </div>
 
       {/* Content */}
-      <div className="p-3">
-        <h3 className="font-semibold text-white text-sm mb-1 line-clamp-2">
+      <div className="card-body p-3">
+        <h3 className="card-title text-sm mb-1 line-clamp-2">
           {image.title}
         </h3>
         
         {image.description && (
-          <p className="text-gray-400 text-xs line-clamp-2 mb-2">
+          <p className="text-base-content/70 text-xs line-clamp-2 mb-2">
             {image.description}
           </p>
         )}
@@ -254,10 +269,15 @@ const ImageComponent: React.FC<ImageComponentProps> = ({
             <div className="flex items-center space-x-1">
               <button
                 onClick={handleShare}
-                className="p-1 text-gray-400 hover:text-white transition-colors"
-                title="Share image"
+                disabled={isSharing}
+                className={`p-1 transition-colors ${
+                  isSharing 
+                    ? 'text-gray-600 cursor-not-allowed' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title={isSharing ? "Sharing..." : "Share image"}
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className={`w-4 h-4 ${isSharing ? 'animate-pulse' : ''}`} />
               </button>
               
               <button

@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     }, { status: 200 });
   } catch (error) {
     console.error("Error fetching videos:", error);
-    logSecurityEvent('VIDEOS_FETCH_ERROR', { error: error.message }, request);
+    logSecurityEvent('VIDEOS_FETCH_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, request);
     return NextResponse.json(
       { error: "Failed to fetch videos" },
       { status: 500 }
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating video:", error);
-    logSecurityEvent('VIDEO_CREATE_ERROR', { error: error.message }, request);
+    logSecurityEvent('VIDEO_CREATE_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, request);
     return NextResponse.json(
       { error: "Failed to create video" },
       { status: 500 }

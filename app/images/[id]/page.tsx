@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Eye,
   Calendar,
-  Tag,
   User
 } from 'lucide-react';
 import { IImage } from '@/models/Image';

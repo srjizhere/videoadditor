@@ -50,6 +50,28 @@ export interface ImageUploadData extends MediaUploadData {
   };
   fileSize: number;
   format: 'jpg' | 'jpeg' | 'png' | 'webp' | 'gif';
+  // AI-generated data
+  aiTags?: Array<{
+    tag: string;
+    confidence: number;
+    category: string;
+  }>;
+  aiCategory?: string;
+  aiCategoryConfidence?: number;
+  faceDetection?: {
+    faces: Array<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      confidence: number;
+    }>;
+    faceCount: number;
+  };
+  backgroundRemoved?: boolean;
+  backgroundRemovedUrl?: string;
+  qualityEnhanced?: boolean;
+  qualityEnhancedUrl?: string;
 }
 
 // Video specific upload data
@@ -163,6 +185,11 @@ export interface VideoTransformation {
     width?: number;
     height?: number;
   };
+  crop?: 'maintain_ratio' | 'force' | 'at_least' | 'at_max';
+  focus?: 'auto' | 'face' | 'faces' | 'center' | 'top' | 'left' | 'bottom' | 'right';
+  rotation?: number;
+  flip?: 'horizontal' | 'vertical';
+  speed?: number;
 }
 
 // Utility types

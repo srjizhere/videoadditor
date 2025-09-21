@@ -14,22 +14,25 @@
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
     "daisyui": "^5.1.7",
-    "lucide-react": "^0.542.0",
+    "lucide-react": "^0.544.0",
     "mongoose": "^8.15.1",
     "next": "15.3.3",
     "next-auth": "^4.24.11",
+    "npm": "^11.6.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "uninstall": "^0.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
-    "tailwindcss": "^4",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.1.12",
     "typescript": "^5"
   }
 }

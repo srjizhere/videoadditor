@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Video } from "@imagekit/next";
 import { 
   Play, 
@@ -15,15 +15,15 @@ import {
   Save,
   Undo,
   Redo,
-  Scissors,
   Volume2,
   VolumeX
 } from "lucide-react";
-import { VideoTransformation, buildVideoTransformationUrl } from "@/lib/imagekit-utils";
+import { buildVideoTransformationUrl } from "@/lib/imagekit-utils";
+import type { VideoTransformation as VidTransform } from "@/types/media";
 
 interface VideoEditorProps {
   videoUrl: string;
-  onSave?: (transformation: VideoTransformation) => void;
+  onSave?: (transformation: VidTransform) => void;
   className?: string;
 }
 
@@ -36,10 +36,10 @@ export default function VideoEditor({ videoUrl, onSave, className = "" }: VideoE
   const [showFilters, setShowFilters] = useState(false);
   const [showCrop, setShowCrop] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [history, setHistory] = useState<VideoTransformation[]>([]);
+  const [history, setHistory] = useState<VidTransform[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   
-  const [transformation, setTransformation] = useState<VideoTransformation>({
+  const [transformation, setTransformation] = useState<VidTransform>({
     width: 1080,
     height: 1920,
     quality: 80,
@@ -51,7 +51,7 @@ export default function VideoEditor({ videoUrl, onSave, className = "" }: VideoE
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Add transformation to history
-  const addToHistory = (newTransformation: VideoTransformation) => {
+  const addToHistory = (newTransformation: VidTransform) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newTransformation);
     setHistory(newHistory);
@@ -75,7 +75,7 @@ export default function VideoEditor({ videoUrl, onSave, className = "" }: VideoE
   };
 
   // Update transformation
-  const updateTransformation = (updates: Partial<VideoTransformation>) => {
+  const updateTransformation = (updates: Partial<VidTransform>) => {
     const newTransformation = { ...transformation, ...updates };
     setTransformation(newTransformation);
     addToHistory(newTransformation);
@@ -307,7 +307,7 @@ export default function VideoEditor({ videoUrl, onSave, className = "" }: VideoE
                 <label className="block text-sm font-medium mb-2">Crop Mode</label>
                 <select
                   value={transformation.crop || 'maintain_ratio'}
-                  onChange={(e) => updateTransformation({ crop: e.target.value as any })}
+                  onChange={(e) => updateTransformation({ crop: e.target.value as VidTransform['crop'] })}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-800"
                 >
                   <option value="maintain_ratio">Maintain Ratio</option>
@@ -320,7 +320,7 @@ export default function VideoEditor({ videoUrl, onSave, className = "" }: VideoE
                 <label className="block text-sm font-medium mb-2">Focus</label>
                 <select
                   value={transformation.focus || 'auto'}
-                  onChange={(e) => updateTransformation({ focus: e.target.value as any })}
+                  onChange={(e) => updateTransformation({ focus: e.target.value as VidTransform['focus'] })}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-800"
                 >
                   <option value="auto">Auto</option>
@@ -406,7 +406,7 @@ export default function VideoEditor({ videoUrl, onSave, className = "" }: VideoE
                 <label className="block text-sm font-medium mb-2">Format</label>
                 <select
                   value={transformation.format || 'auto'}
-                  onChange={(e) => updateTransformation({ format: e.target.value as any })}
+                  onChange={(e) => updateTransformation({ format: e.target.value as VidTransform['format'] })}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-800"
                 >
                   <option value="auto">Auto</option>

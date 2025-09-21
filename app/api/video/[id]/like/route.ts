@@ -1,8 +1,6 @@
 import { connectDB } from "@/lib/db";
 import Video from "@/models/Video";
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { 
   checkRateLimit, 
   requireAuth, 
@@ -12,7 +10,7 @@ import {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Rate limiting
@@ -33,8 +31,8 @@ export async function POST(
       );
     }
 
-    const session = authResult.session;
-    const videoId = params.id;
+    const session = authResult.session!;
+    const { id: videoId } = await params;
 
     // Validate video ID
     if (!validateVideoId(videoId)) {
@@ -89,7 +87,7 @@ export async function POST(
     }
   } catch (error) {
     console.error("Like video error", error);
-    logSecurityEvent('VIDEO_LIKE_ERROR', { error: error.message }, request);
+    logSecurityEvent('VIDEO_LIKE_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' }, request);
     return NextResponse.json(
       { error: "Failed to like video" },
       { status: 500 }
@@ -99,7 +97,7 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Rate limiting
@@ -120,8 +118,8 @@ export async function GET(
       );
     }
 
-    const session = authResult.session;
-    const videoId = params.id;
+    const session = authResult.session!;
+    const { id: videoId } = await params;
 
     // Validate video ID
     if (!validateVideoId(videoId)) {
