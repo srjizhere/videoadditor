@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, CheckCircle } from "lucide-react";
-import Header from "../components/Header";
+import { Header } from "../components/layout";
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -43,6 +43,8 @@ function RegisterPage() {
     }
 
     try {
+      console.log("📝 Registration attempt for:", formData.email);
+      
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -53,17 +55,22 @@ function RegisterPage() {
           password: formData.password,
         }),
       });
+      
+      console.log("📊 Registration response status:", res.status);
       const data = await res.json();
 
       if (!res.ok) {
+        console.error("❌ Registration failed:", data.error);
         throw new Error(data.error || "Registration failed");
       }
 
+      console.log("✅ Registration successful");
       setSuccess(true);
       setTimeout(() => {
       router.push("/login");
       }, 2000);
     } catch (error: unknown) {
+      console.error("❌ Registration error:", error);
       setError(error instanceof Error ? error.message : "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);

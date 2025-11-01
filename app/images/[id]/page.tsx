@@ -15,7 +15,7 @@ import {
   User
 } from 'lucide-react';
 import { IImage } from '@/models/Image';
-import { useNotification } from '@/app/components/Notification';
+import { useNotification } from '@/app/components/layout/Notification';
 
 const ImageDetailPage: React.FC = () => {
   const params = useParams();

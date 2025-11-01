@@ -58,16 +58,6 @@ export interface ImageUploadData extends MediaUploadData {
   }>;
   aiCategory?: string;
   aiCategoryConfidence?: number;
-  faceDetection?: {
-    faces: Array<{
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      confidence: number;
-    }>;
-    faceCount: number;
-  };
   backgroundRemoved?: boolean;
   backgroundRemovedUrl?: string;
   qualityEnhanced?: boolean;

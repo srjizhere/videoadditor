@@ -1,0 +1,232 @@
+/**
+ * ImageKit AI Services Integration
+ * This module provides integration with ImageKit's AI-powered features
+ */
+
+import { AIServiceError } from '../ai-services';
+
+export interface ImageKitAITag {
+  name: string;
+  confidence: number;
+  category?: string;
+}
+
+export interface ImageKitAIResponse {
+  tags: ImageKitAITag[];
+  categories?: string[];
+  objects?: string[];
+  faces?: any[];
+  text?: string[];
+}
+
+/**
+ * Configure ImageKit AI services for tagging
+ */
+export interface ImageKitAIConfig {
+  service: 'google-vision' | 'aws-rekognition' | 'auto';
+  maxTags?: number;
+  minConfidence?: number;
+  includeCategories?: boolean;
+  includeObjects?: boolean;
+  includeFaces?: boolean;
+  includeText?: boolean;
+}
+
+/**
+ * Generate ImageKit AI transformation URL for auto-tagging
+ */
+export function generateImageKitAITaggingUrl(
+  imageUrl: string,
+  config: ImageKitAIConfig = { service: 'auto' }
+): string {
+  const baseUrl = imageUrl;
+  const params = new URLSearchParams();
+  
+  // Add AI service parameters
+  if (config.service !== 'auto') {
+    params.append('ai', config.service);
+  } else {
+    params.append('ai', 'auto-tag');
+  }
+  
+  if (config.maxTags) {
+    params.append('maxTags', config.maxTags.toString());
+  }
+  
+  if (config.minConfidence) {
+    params.append('minConfidence', config.minConfidence.toString());
+  }
+  
+  if (config.includeCategories) {
+    params.append('includeCategories', 'true');
+  }
+  
+  if (config.includeObjects) {
+    params.append('includeObjects', 'true');
+  }
+  
+  if (config.includeFaces) {
+    params.append('includeFaces', 'true');
+  }
+  
+  if (config.includeText) {
+    params.append('includeText', 'true');
+  }
+  
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+}
+
+/**
+ * Call ImageKit AI services for image analysis
+ */
+export async function callImageKitAIServices(
+  imageUrl: string,
+  config: ImageKitAIConfig = { service: 'auto' }
+): Promise<ImageKitAIResponse> {
+  try {
+    const aiUrl = generateImageKitAITaggingUrl(imageUrl, config);
+    
+    const response = await fetch(aiUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new AIServiceError(
+        `ImageKit AI service failed: ${response.statusText}`,
+        'imagekit-ai',
+        response.status
+      );
+    }
+    
+    const data = await response.json();
+    
+    // Parse the response based on ImageKit's actual format
+    return parseImageKitAIResponse(data);
+    
+  } catch (error) {
+    if (error instanceof AIServiceError) {
+      throw error;
+    }
+    
+    throw new AIServiceError(
+      `ImageKit AI service error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'imagekit-ai',
+      500,
+      error
+    );
+  }
+}
+
+/**
+ * Parse ImageKit AI response into standardized format
+ */
+function parseImageKitAIResponse(data: any): ImageKitAIResponse {
+  const result: ImageKitAIResponse = {
+    tags: [],
+    categories: [],
+    objects: [],
+    faces: [],
+    text: []
+  };
+  
+  try {
+    // Parse tags from various possible response formats
+    if (data.tags && Array.isArray(data.tags)) {
+      result.tags = data.tags.map((tag: any) => ({
+        name: tag.name || tag.label || tag.text || String(tag),
+        confidence: tag.confidence || tag.score || tag.probability || 0.5,
+        category: tag.category || tag.type || 'other'
+      }));
+    }
+    
+    // Parse categories
+    if (data.categories && Array.isArray(data.categories)) {
+      result.categories = data.categories;
+    }
+    
+    // Parse objects
+    if (data.objects && Array.isArray(data.objects)) {
+      result.objects = data.objects;
+    }
+    
+    // Parse faces
+    if (data.faces && Array.isArray(data.faces)) {
+      result.faces = data.faces;
+    }
+    
+    // Parse text
+    if (data.text && Array.isArray(data.text)) {
+      result.text = data.text;
+    }
+    
+    // If no structured data, try to extract from raw response
+    if (result.tags.length === 0 && data.labels) {
+      result.tags = data.labels.map((label: any) => ({
+        name: label.name || label.description || String(label),
+        confidence: label.confidence || label.score || 0.5,
+        category: label.category || 'other'
+      }));
+    }
+    
+  } catch (parseError) {
+    console.warn('Error parsing ImageKit AI response:', parseError);
+  }
+  
+  return result;
+}
+
+/**
+ * Convert ImageKit AI response to our AITag format
+ */
+export function convertImageKitTagsToAITags(imageKitTags: ImageKitAITag[]): Array<{
+  tag: string;
+  confidence: number;
+  category: string;
+}> {
+  return imageKitTags.map(tag => ({
+    tag: tag.name,
+    confidence: tag.confidence,
+    category: tag.category || 'other'
+  }));
+}
+
+/**
+ * Get the best category from ImageKit AI response
+ */
+export function getBestCategoryFromImageKitResponse(response: ImageKitAIResponse): {
+  category: string;
+  confidence: number;
+} {
+  const categoryCount: { [key: string]: number } = {};
+  
+  // Count categories from tags
+  response.tags.forEach(tag => {
+    if (tag.category) {
+      categoryCount[tag.category] = (categoryCount[tag.category] || 0) + tag.confidence;
+    }
+  });
+  
+  // Count categories from categories array
+  response.categories?.forEach(category => {
+    categoryCount[category] = (categoryCount[category] || 0) + 0.5;
+  });
+  
+  if (Object.keys(categoryCount).length === 0) {
+    return { category: 'other', confidence: 0 };
+  }
+  
+  const bestCategory = Object.keys(categoryCount).reduce((a, b) => 
+    categoryCount[a] > categoryCount[b] ? a : b
+  );
+  
+  const confidence = Math.min(categoryCount[bestCategory] / response.tags.length, 1);
+  
+  return {
+    category: bestCategory,
+    confidence
+  };
+}

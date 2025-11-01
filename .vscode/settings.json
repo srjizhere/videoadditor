@@ -3,5 +3,6 @@
      "zenMode.fullScreen": false,
      "zenMode.hideActivityBar": false,
      "zenMode.hideLineNumbers": false,
-     "zenMode.hideStatusBar": false
+     "zenMode.hideStatusBar": false,
+  
 }

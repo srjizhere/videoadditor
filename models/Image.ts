@@ -31,16 +31,6 @@ export interface IImage extends Document {
   }>;
   aiCategory?: 'nature' | 'portrait' | 'landscape' | 'abstract' | 'street' | 'macro' | 'food' | 'animal' | 'architecture' | 'other';
   aiCategoryConfidence?: number;
-  faceDetection?: {
-    faces: Array<{
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      confidence: number;
-    }>;
-    faceCount: number;
-  };
   backgroundRemoved?: boolean;
   backgroundRemovedUrl?: string;
   qualityEnhanced?: boolean;
@@ -182,16 +172,6 @@ const imageSchema = new Schema<IImage>({
     min: 0,
     max: 1,
     default: null
-  },
-  faceDetection: {
-    faces: [{
-      x: { type: Number, required: true },
-      y: { type: Number, required: true },
-      width: { type: Number, required: true },
-      height: { type: Number, required: true },
-      confidence: { type: Number, min: 0, max: 1, required: true }
-    }],
-    faceCount: { type: Number, default: 0 }
   },
   backgroundRemoved: {
     type: Boolean,

@@ -1,6 +1,17 @@
 import type { Config } from 'tailwindcss'
 
-const config: Config = {
+const config: Config & {
+  daisyui?: {
+    themes?: any[];
+    darkTheme?: string;
+    base?: boolean;
+    styled?: boolean;
+    utils?: boolean;
+    prefix?: string;
+    logs?: boolean;
+    themeRoot?: string;
+  };
+} = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',

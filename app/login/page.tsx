@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
-import Header from "../components/Header";
+import { Header } from "../components/layout";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,15 +19,23 @@ function LoginPage() {
     setIsLoading(true);
     setError("");
 
+    console.log("🔐 Login attempt for:", email);
+    console.log("📧 Email being sent:", email);
+    console.log("🔑 Password length:", password.length);
+    
     const result = await signIn("credentials", {
       email,
       password,
       redirect: false,
     });
 
+    console.log("📊 Login result:", result);
+
     if (result?.error) {
+      console.error("❌ Login error:", result.error);
       setError("Invalid email or password. Please try again.");
     } else {
+      console.log("✅ Login successful, redirecting...");
       router.push("/");
     }
     

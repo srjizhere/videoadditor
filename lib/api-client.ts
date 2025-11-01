@@ -52,7 +52,17 @@ class ApiClient {
         });
 
         if (!response.ok) {
-          throw new Error(await response.text());
+          const errorText = await response.text();
+          console.error(`API Error ${response.status}:`, errorText);
+          throw new Error(`API Error ${response.status}: ${errorText}`);
+        }
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text();
+          console.error('Non-JSON response received:', responseText);
+          throw new Error(`Expected JSON response but received: ${contentType}`);
         }
 
         const data = await response.json();

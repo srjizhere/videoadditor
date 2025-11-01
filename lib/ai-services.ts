@@ -24,16 +24,6 @@ export interface AITag {
   category: string;
 }
 
-export interface FaceDetection {
-  faces: Array<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    confidence: number;
-  }>;
-  faceCount: number;
-}
 
 export interface ImageEnhancement {
   brightness?: number;
@@ -81,7 +71,6 @@ export interface ContentModerationResult {
 // ImageKit AI Transformations
 export const IMAGEKIT_AI_TRANSFORMATIONS = {
   BACKGROUND_REMOVAL: 'bg-removal',
-  FACE_DETECTION: 'face-detection',
   OBJECT_DETECTION: 'object-detection',
   QUALITY_ENHANCEMENT: 'quality-enhancement',
   AUTO_TAG: 'auto-tag',
@@ -171,11 +160,6 @@ export function validateServerAIConfig(): { isValid: boolean; missing: string[] 
   
   // Check server-side environment variables
   if (!process.env.IMAGEKIT_PRIVATE_KEY) missing.push('IMAGEKIT_PRIVATE_KEY');
-  // AI service keys are optional - only check if you're using those services
-  // if (!process.env.OPENAI_API_KEY) missing.push('OPENAI_API_KEY');
-  // if (!process.env.GOOGLE_CLOUD_API_KEY) missing.push('GOOGLE_CLOUD_API_KEY');
-  // if (!process.env.AWS_SECRET_ACCESS_KEY) missing.push('AWS_SECRET_ACCESS_KEY');
-  // if (!process.env.AWS_ACCESS_KEY_ID) missing.push('AWS_ACCESS_KEY_ID');
   
   return {
     isValid: missing.length === 0,

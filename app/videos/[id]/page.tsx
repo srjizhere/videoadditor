@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Video } from "@imagekit/next";
-import Header from "../../components/Header";
+import { Header } from "../../components/layout";
 import { IVideo } from "@/models/Video";
 import {
   ArrowLeft,
@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react";
-import { useNotification } from "../../components/Notification";
+import { useNotification } from "../../components/layout/Notification";
+import { LoadingState } from "../../components/ui/DaisyUIProgress";
 import Link from "next/link";
 
 export default function VideoDetailPage() {
@@ -198,11 +199,11 @@ export default function VideoDetailPage() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-black flex items-center justify-center">
-          <div className="text-white text-center">
-            <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" />
-            <p className="text-lg">Loading video...</p>
-          </div>
+        <div className="min-h-screen bg-base-100">
+          <LoadingState 
+            message="Loading video..." 
+            className="min-h-screen"
+          />
         </div>
       </>
     );
@@ -254,6 +255,7 @@ export default function VideoDetailPage() {
                 <Video
                   ref={videoRef}
                   src={currentVideo.videoUrl}
+                  urlEndpoint={process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}
                   transformation={[
                     {
                       height: "1920",
@@ -442,6 +444,7 @@ export default function VideoDetailPage() {
                       <div className="relative w-20 h-20 flex-shrink-0">
                         <Video
                           src={video.videoUrl}
+                          urlEndpoint={process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}
                           transformation={[
                             {
                               height: "80",

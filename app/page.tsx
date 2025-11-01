@@ -2,14 +2,16 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Play, Upload, Sparkles, Users, Zap, Shield, Video, Image as ImageIcon } from "lucide-react";
-import Header from "./components/Header";
-import VideoFeed from "./components/VideoFeed";
-import ImageFeed from "./components/ImageFeed";
+import { Play, Upload, Sparkles, Users, Zap, Shield, Video, Image as ImageIcon, Eye } from "lucide-react";
+import { Header } from "./components/layout";
+import VideoFeed from "./components/features/VideoFeed";
+import ImageFeed from "./components/features/ImageFeed";
 import { useEffect, useState, useCallback } from "react";
 import { IVideo } from "@/models/Video";
 import { IImage } from "@/models/Image";
 import { MediaType } from "@/types/media";
+import { DaisyUISkeleton, LoadingState } from "./components/ui/DaisyUIProgress";
+import { EnhancedStats } from "./components/ui/DaisyUIDataDisplay";
 
 // Custom hook to handle hydration
 function useHydrated() {
@@ -193,11 +195,14 @@ export default function Home() {
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="card bg-base-100 shadow-lg overflow-hidden animate-pulse">
-                    <div className={`${activeTab === MediaType.VIDEO ? 'aspect-[9/16]' : 'aspect-square'} bg-base-300`}></div>
+                  <div key={i} className="card bg-base-100 shadow-lg overflow-hidden">
+                    <DaisyUISkeleton 
+                      height={activeTab === MediaType.VIDEO ? 300 : 200}
+                      className="w-full"
+                    />
                     <div className="card-body">
-                      <div className="h-4 bg-base-300 rounded mb-2"></div>
-                      <div className="h-3 bg-base-300 rounded w-3/4"></div>
+                      <DaisyUISkeleton height={20} className="mb-2" />
+                      <DaisyUISkeleton height={16} width="75%" />
                     </div>
                   </div>
                 ))}
@@ -223,6 +228,61 @@ export default function Home() {
                 )}
               </>
             )}
+          </div>
+        </section>
+
+        {/* Stats Section - Show to all users */}
+        <section className="py-16 bg-base-200">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-base-content mb-4">
+                Platform Statistics
+              </h2>
+              <p className="text-lg text-base-content/70">
+                Join thousands of creators who trust MediaEditor Pro
+              </p>
+            </div>
+            <EnhancedStats 
+              stats={[
+                {
+                  label: 'Total Videos',
+                  value: videos.length.toLocaleString(),
+                  change: 12.5,
+                  changeType: 'increase',
+                  icon: <Video className="w-6 h-6" />,
+                  color: 'primary',
+                  description: 'Videos uploaded this month'
+                },
+                {
+                  label: 'Total Images',
+                  value: images.length.toLocaleString(),
+                  change: 8.2,
+                  changeType: 'increase',
+                  icon: <ImageIcon className="w-6 h-6" />,
+                  color: 'secondary',
+                  description: 'Images processed'
+                },
+                {
+                  label: 'Active Users',
+                  value: '2.5K',
+                  change: 15.3,
+                  changeType: 'increase',
+                  icon: <Users className="w-6 h-6" />,
+                  color: 'accent',
+                  description: 'Monthly active users'
+                },
+                {
+                  label: 'Total Views',
+                  value: '1.2M',
+                  change: 22.1,
+                  changeType: 'increase',
+                  icon: <Eye className="w-6 h-6" />,
+                  color: 'success',
+                  description: 'Content views this month'
+                }
+              ]}
+              layout="horizontal"
+            />
           </div>
         </section>
 
