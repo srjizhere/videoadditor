@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { logSecurityEvent } from '@/lib/security';
 import { extractMetadataFromHeaders, isImageKitProcessing, isValidProcessedImage } from '@/lib/metadata-utils';
+import { validateImageKitUrl } from '@/lib/imagekit/url-validation';
 
 /**
  * Check the status of image enhancement processing
@@ -29,9 +30,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // ✅ CRITICAL: Validate URL before fetching (SSRF protection)
+    const validation = validateImageKitUrl(enhancedUrl);
+    if (!validation.isValid) {
+      logSecurityEvent('SSRF_ATTEMPT_BLOCKED', {
+        userId: session.user.id,
+        url: enhancedUrl,
+        reason: validation.error
+      }, request);
+      
+      return NextResponse.json({
+        success: false,
+        status: 'error',
+        isReady: false,
+        error: 'Invalid URL format'
+      }, { status: 400 });
+    }
+
+    // ✅ Set timeout for fetch (prevent hanging)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
     // Check if the enhanced image is available by making a HEAD request
     try {
-      const response = await fetch(enhancedUrl, { method: 'HEAD' });
+      const response = await fetch(enhancedUrl, { 
+        method: 'HEAD',
+        signal: controller.signal,
+        // ✅ Restrict redirects (prevent redirect attacks)
+        redirect: 'error' as RequestRedirect
+      });
+      
+      clearTimeout(timeoutId);
       
       // Check if ImageKit is still processing the image
       const contentType = response.headers.get('content-type') || '';
@@ -109,24 +138,73 @@ export async function GET(request: NextRequest) {
             note: 'ImageKit is preparing the enhanced image'
           }
         });
-      } else {
-        // Other error
+      } else if (response.status >= 400 && response.status < 500) {
+        // ✅ 4xx errors = permanent client errors
+        clearTimeout(timeoutId);
         return NextResponse.json({
           success: false,
           status: 'error',
           isReady: false,
-          error: `HTTP ${response.status}: ${response.statusText}`
+          error: `Client error: HTTP ${response.status}`,
+          message: 'Image enhancement failed permanently. Please try again with a different image.'
+        });
+      } else {
+        // ✅ 5xx errors = server errors (might be temporary)
+        clearTimeout(timeoutId);
+        return NextResponse.json({
+          success: true,
+          status: 'processing',
+          isReady: false,
+          enhancedUrl,
+          message: 'ImageKit server is experiencing issues. Retrying...',
+          estimatedTime: 'Unknown'
         });
       }
-    } catch (fetchError) {
-      // Network error or timeout
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      
+      // ✅ DISTINGUISH error types
+      const errorMessage = fetchError?.message || 'Unknown error';
+      const errorCode = fetchError?.code;
+      
+      // ✅ Permanent errors (fail fast)
+      if (
+        errorCode === 'ENOTFOUND' || // DNS failure (permanent)
+        errorCode === 'ENETUNREACH' || // Network unreachable
+        errorMessage.includes('Invalid URL') ||
+        errorMessage.includes('ECONNREFUSED')
+      ) {
+        return NextResponse.json({
+          success: false,
+          status: 'error',
+          isReady: false,
+          error: 'Network error: Unable to reach ImageKit servers',
+          message: 'Image enhancement failed due to network issues. Please check your connection and try again.'
+        });
+      }
+      
+      // ✅ Timeout (might be temporary, but likely permanent if ImageKit is down)
+      if (fetchError.name === 'AbortError' || errorMessage.includes('timeout')) {
+        // Track consecutive timeouts
+        // If > 3 timeouts in a row, treat as permanent error
+        return NextResponse.json({
+          success: true, // Still treat as processing for first few timeouts
+          status: 'processing',
+          isReady: false,
+          enhancedUrl,
+          message: 'Request timeout. ImageKit may be slow. Retrying...',
+          estimatedTime: 'Unknown'
+        });
+      }
+      
+      // ✅ Temporary errors (retry)
       return NextResponse.json({
         success: true,
         status: 'processing',
         isReady: false,
         enhancedUrl,
-        message: 'Image enhancement is still processing. Please wait...',
-        estimatedTime: '3-5 minutes total'
+        message: 'Temporary network issue. Retrying...',
+        estimatedTime: 'Unknown'
       });
     }
 

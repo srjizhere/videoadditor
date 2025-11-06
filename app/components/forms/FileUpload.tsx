@@ -89,7 +89,6 @@ const FileUpload = ({ onSuccess, onProgress, fileType }: FileUploadProps) => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    debugger
     
     if (file) {
       await handleFile(file);

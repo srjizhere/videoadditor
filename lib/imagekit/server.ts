@@ -340,6 +340,128 @@ export function mergeTransformationSteps(
 }
 
 /**
+ * Merge transformation parameters at the individual parameter level
+ * This prevents sequential chaining (with :) and processes all transformations in parallel
+ * 
+ * This is the preferred method for merging transformations as it's faster and avoids timeouts.
+ * 
+ * @param existingSteps - Array of existing transformation step strings
+ * @param newStep - New transformation step string to merge
+ * @returns Single merged transformation string (all parameters in one step)
+ */
+export function mergeTransformationParameters(
+  existingSteps: string[],
+  newStep: string
+): string {
+  try {
+    // Parse all existing steps into individual parameters
+    const allParams = new Map<string, string>();
+    
+    // Process existing steps
+    if (Array.isArray(existingSteps)) {
+      for (const step of existingSteps) {
+        if (!step || typeof step !== 'string') continue;
+        
+        // Handle chained transformations (separated by colons)
+        const chains = step.split(':');
+        
+        for (const chain of chains) {
+          // Split chain into parameters
+          const params = chain.split(',').filter(Boolean).map(p => p.trim());
+          
+          for (const param of params) {
+            // Extract parameter key (e.g., 'q-' from 'q-90', 'e-brightness-' from 'e-brightness-10')
+            const dashIndex = param.indexOf('-');
+            if (dashIndex > 0) {
+              // ✅ FIX: For simple params (q-90, f-auto, w-800), use just the prefix (q-, f-, w-)
+              // For enhancement params (e-brightness-50, e-contrast-30), use e-brightness-, e-contrast-
+              let key: string;
+              
+              // Check if it's an enhancement param (starts with e-)
+              if (param.startsWith('e-')) {
+                // Enhancement params: e-brightness-50 -> e-brightness-, e-contrast-30 -> e-contrast-
+                const parts = param.split('-');
+                if (parts.length >= 3) {
+                  key = parts.slice(0, 3).join('-') + '-'; // e-brightness-
+                } else {
+                  key = param.substring(0, dashIndex + 1); // e-
+                }
+              } else {
+                // Simple params: q-90 -> q-, f-auto -> f-, w-800 -> w-
+                key = param.substring(0, dashIndex + 1);
+              }
+              
+              allParams.set(key, param); // Replace if exists (newer takes precedence)
+            }
+          }
+        }
+      }
+    }
+    
+    // Process new step
+    if (newStep && typeof newStep === 'string' && newStep.trim()) {
+      // Handle chained transformations in new step too
+      const chains = newStep.split(':');
+      
+      for (const chain of chains) {
+        const params = chain.split(',').filter(Boolean).map(p => p.trim());
+        
+        for (const param of params) {
+          const dashIndex = param.indexOf('-');
+          if (dashIndex > 0) {
+            // ✅ FIX: Same logic as above for consistency
+            let key: string;
+            
+            if (param.startsWith('e-')) {
+              const parts = param.split('-');
+              if (parts.length >= 3) {
+                key = parts.slice(0, 3).join('-') + '-'; // e-brightness-
+              } else {
+                key = param.substring(0, dashIndex + 1); // e-
+              }
+            } else {
+              key = param.substring(0, dashIndex + 1); // q-, f-, w-, etc.
+            }
+            
+            allParams.set(key, param); // Replace existing with new
+          }
+        }
+      }
+    }
+    
+    // Combine all parameters into single string, ordered logically:
+    // 1. Dimensions (w, h)
+    // 2. Quality and format (q, f)
+    // 3. Effects (e-*, bg-*)
+    // 4. Other enhancements (bl, rt, fl, etc.)
+    // 5. Utility params (pr, di, etc.)
+    const orderedParams: string[] = [];
+    const paramOrder = ['w-', 'h-', 'q-', 'f-', 'bl-', 'e-', 'bg-', 'rt-', 'fl-', 'c-', 'cm-', 'fo-', 'pr-', 'di-'];
+    
+    // First, add ordered params
+    for (const prefix of paramOrder) {
+      for (const [key, value] of allParams.entries()) {
+        if (key.startsWith(prefix) && !orderedParams.includes(value)) {
+          orderedParams.push(value);
+        }
+      }
+    }
+    
+    // Then add any remaining params
+    for (const [key, value] of allParams.entries()) {
+      if (!orderedParams.includes(value)) {
+        orderedParams.push(value);
+      }
+    }
+    
+    return orderedParams.join(',');
+  } catch (error) {
+    console.error('Error in mergeTransformationParameters:', error);
+    return newStep || '';
+  }
+}
+
+/**
  * Smart transformation chaining with override logic
  * 
  * This function combines existing transformations with a new transformation,

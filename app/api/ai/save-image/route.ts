@@ -27,15 +27,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the save operation
-    await logSecurityEvent({
-      type: 'image_save',
+    logSecurityEvent('IMAGE_SAVE', {
       userId: session.user.id,
-      details: {
-        imageUrl,
-        transformationCount: transformations?.length || 0,
-        metadata
-      }
-    });
+      imageUrl,
+      transformationCount: transformations?.length || 0,
+      metadata
+    }, request);
 
     // Generate unique filename for saved image
     const timestamp = Date.now();

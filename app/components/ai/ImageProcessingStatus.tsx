@@ -149,7 +149,11 @@ const ImageProcessingStatus: React.FC<ImageProcessingStatusProps> = ({
         const nextPhase = prev + 1;
         if (nextPhase >= phases.length) {
           setIsCompleted(true);
-          onComplete?.();
+          // ✅ FIX: Defer onComplete to avoid calling during render
+          // Use setTimeout to ensure it runs after React has finished rendering
+          setTimeout(() => {
+            onComplete?.();
+          }, 0);
           return prev;
         }
         return nextPhase;
@@ -180,10 +184,11 @@ const ImageProcessingStatus: React.FC<ImageProcessingStatusProps> = ({
     if (isCompleted && isProcessing) {
       setTimeout(() => {
         setProgress(100);
-        onComplete?.();
+        // ✅ FIX: onComplete is already called in phase progression, don't call again
+        // This prevents duplicate calls
       }, 1000);
     }
-  }, [isCompleted, isProcessing, onComplete]);
+  }, [isCompleted, isProcessing]);
 
   if (!isProcessing && !isCompleted) return null;
 

@@ -293,8 +293,10 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
               <div className="relative group">
                 <div className="flex justify-center">
                   <div className="relative max-w-full max-h-80 overflow-hidden rounded-lg border border-gray-600">
+                    {/* ✅ CRITICAL: Always show originalUrl for preview, not previewUrl
+                        previewUrl may change but we want to always show the original */}
                     <Image
-                      src={previewUrl}
+                      src={originalUrl || previewUrl || ''}
                       alt="Preview"
                       width={400}
                       height={320}
@@ -388,18 +390,27 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
             </div>
             <SingleImageEditor
               key={originalUrl || 'editor'}
-              imageUrl={previewUrl}
+              imageUrl={originalUrl || ''}
               onImageProcessed={(processedUrl) => {
-                setPreviewUrl(processedUrl);
+                // ✅ CRITICAL: Only update formData with processed URL, NOT previewUrl
+                // previewUrl should always show the original image for preview
+                // formData.imageUrl will contain the processed URL for form submission
+                if (processedUrl && processedUrl.trim() !== '') {
+                  // ✅ DO NOT update previewUrl - keep it as original
+                  // Only update formData so the form submits the processed image
                 setFormData(prev => ({
                   ...prev,
                   imageUrl: processedUrl,
                   thumbnailUrl: processedUrl
                 }));
-                showNotification('Image processed successfully!', 'success');
+                  showNotification('Image processed successfully! The preview shows the original, but the processed image will be saved.', 'success');
+                } else {
+                  console.warn('⚠️ onImageProcessed called with empty URL, preserving current image');
+                }
               }}
               onReset={() => {
                 if (originalUrl) {
+                  // ✅ Reset both previewUrl and formData to original
                   setPreviewUrl(originalUrl);
                   setFormData(prev => ({
                     ...prev,

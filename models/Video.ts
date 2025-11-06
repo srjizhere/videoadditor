@@ -10,7 +10,7 @@ export interface IVideo {
   title: string;
   description: string;
   videoUrl: string;
-  thumbnailUrl: string;
+  thumbnailUrl?: string; // Optional - auto-generated if not provided
   uploader: mongoose.Types.ObjectId;
   uploaderName?: string;
   uploaderEmail?: string;
@@ -35,7 +35,10 @@ const videoSchema = new Schema<IVideo>(
     title: { type: String, required: true },
     description: { type: String, required: true },
     videoUrl: { type: String, required: true },
-    thumbnailUrl: { type: String, required: true },
+    thumbnailUrl: { 
+      type: String, 
+      required: false // Auto-generated if not provided
+    },
     uploader: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     uploaderName: { type: String },
     uploaderEmail: { type: String },
@@ -57,6 +60,17 @@ const videoSchema = new Schema<IVideo>(
     timestamps: true,
   }
 );
+
+// Pre-save middleware to generate thumbnail if not provided
+videoSchema.pre('save', async function(next) {
+  if (!this.thumbnailUrl && this.videoUrl) {
+    // Dynamic import to avoid circular dependency
+    const { generateVideoThumbnailUrl } = await import('@/lib/imagekit/video-thumbnail');
+    // Generate thumbnail URL using ImageKit transformations
+    this.thumbnailUrl = generateVideoThumbnailUrl(this.videoUrl, 1280, 720);
+  }
+  next();
+});
 
 const Video = models?.Video || model<IVideo>("Video", videoSchema);
 

@@ -5,6 +5,9 @@ import {
   checkRateLimit, 
   logSecurityEvent 
 } from "@/lib/security";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { generateVideoThumbnailUrl } from "@/lib/imagekit/video-thumbnail";
 
 // GET /api/video - Get all public videos with pagination
 export async function GET(request: NextRequest) {
@@ -66,6 +69,16 @@ export async function GET(request: NextRequest) {
 // POST /api/video - Create a new video
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     // Rate limiting for video creation
     const rateLimit = await checkRateLimit(request, 'upload');
     if (!rateLimit.allowed) {
@@ -77,8 +90,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
-    // Basic validation
-    if (!body.title || !body.description || !body.videoUrl || !body.thumbnailUrl) {
+    // Basic validation - thumbnailUrl is now optional (will be auto-generated)
+    if (!body.title || !body.description || !body.videoUrl) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -87,14 +100,17 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
     
+    // Auto-generate thumbnail if not provided
+    const thumbnailUrl = body.thumbnailUrl || generateVideoThumbnailUrl(body.videoUrl, 1280, 720);
+    
     const video = new Video({
       title: body.title,
       description: body.description,
       videoUrl: body.videoUrl,
-      thumbnailUrl: body.thumbnailUrl,
-      uploader: body.uploader || null,
-      uploaderName: body.uploaderName,
-      uploaderEmail: body.uploaderEmail,
+      thumbnailUrl: thumbnailUrl,
+      uploader: session.user.id,
+      uploaderName: session.user.name || session.user.email?.split('@')[0] || 'Unknown',
+      uploaderEmail: session.user.email,
       controls: body.controls !== false, // Default to true
       transformation: body.transformation || {
         height: 1920,

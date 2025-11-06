@@ -8,7 +8,8 @@ import {
   extractExistingTransformations,
   buildChainedTransformationURL,
   createEnhancementStep,
-  mergeTransformationSteps
+  mergeTransformationSteps,
+  mergeTransformationParameters
 } from '@/lib/imagekit/server';
 import { AIServiceError } from '@/lib/ai-services';
 import { logSecurityEvent } from '@/lib/security';
@@ -104,46 +105,80 @@ export async function POST(request: NextRequest) {
         message: 'Auto enhancement completed successfully!'
       };
     } else {
-      // Manual enhancement using real ImageKit transformations with chaining
+      // Manual enhancement using real ImageKit transformations with parameter merging
       // Extract original path and existing transformations
       const originalPath = extractOriginalPath(imageUrl);
       const existingTransformations = extractExistingTransformations(imageUrl);
       
-      // Create new enhancement transformation step
-      const enhancementStep = createEnhancementStep({
-        blur: options.blur,
-        quality: options.quality || 90,
-        format: options.format || 'auto',
-        brightness: options.brightness,
-        contrast: options.contrast,
-        saturation: options.saturation,
-        sharpen: options.sharpen
+      // ✅ Check if background removal is present (improved detection to prevent false positives)
+      const hasBackgroundRemoval = existingTransformations.some(t => {
+        // Check for explicit ImageKit background removal
+        if (t.includes('e-bgremove')) {
+          return true;
+        }
+        
+        // Check for ImageKit bg- parameters (with validation)
+        // Pattern: bg-transparent, bg-white, bg-black, bg-removed
+        const bgPattern = /(^|,|\s)bg-(transparent|white|black|removed)(,|$|\s)/;
+        if (bgPattern.test(t)) {
+          return true;
+        }
+        
+        // Check for bg- at start or after comma (ImageKit format)
+        if (t.match(/^(bg-|.*,bg-)/)) {
+          // Additional validation: should be followed by valid ImageKit bg value
+          const validBgValues = ['transparent', 'white', 'black', 'removed'];
+          const bgMatch = t.match(/bg-([^,]+)/);
+          if (bgMatch && validBgValues.includes(bgMatch[1])) {
+            return true;
+          }
+        }
+        
+        return false;
       });
       
-      // Merge transformations (replaces existing enhancement if present, keeps others)
-      const mergedTransformations = mergeTransformationSteps(existingTransformations, enhancementStep);
+      // Validate enhancement values (allow full range)
+      const safeOptions = {
+        blur: options.blur !== undefined ? Math.max(0, Math.min(options.blur, 100)) : undefined,
+        quality: options.quality ? Math.max(1, Math.min(options.quality, 100)) : 90,
+        format: options.format || 'auto',
+        brightness: options.brightness !== undefined ? Math.max(-100, Math.min(options.brightness, 100)) : undefined,
+        contrast: options.contrast !== undefined ? Math.max(-100, Math.min(options.contrast, 100)) : undefined,
+        saturation: options.saturation !== undefined ? Math.max(-100, Math.min(options.saturation, 100)) : undefined,
+        sharpen: options.sharpen !== undefined ? Math.max(0, Math.min(options.sharpen, 100)) : undefined,
+      };
       
-      // Build chained transformation URL
-      const enhancedUrl = buildChainedTransformationURL(originalPath, mergedTransformations);
+      // Create new enhancement transformation step
+      const enhancementStep = createEnhancementStep(safeOptions);
       
-      console.log('Manual enhancement URL generated with smart merging:');
+      // Merge transformations at parameter level (prevents sequential chaining, processes in parallel)
+      const mergedParameters = mergeTransformationParameters(existingTransformations, enhancementStep);
+      
+      // Build transformation URL with single merged step (faster than chained steps)
+      const enhancedUrl = buildChainedTransformationURL(originalPath, [mergedParameters]);
+      
+      console.log('Manual enhancement URL generated with parameter merging:');
       console.log('Original URL:', imageUrl);
       console.log('Extracted path:', originalPath);
       console.log('Existing transformations:', existingTransformations);
+      console.log('Has background removal:', hasBackgroundRemoval);
+      console.log('Safe options:', safeOptions);
       console.log('New enhancement step:', enhancementStep);
-      console.log('Merged transformations:', mergedTransformations);
+      console.log('Merged parameters (single step):', mergedParameters);
       console.log('Enhanced URL:', enhancedUrl);
-      console.log('Options:', options);
 
       result = {
         originalUrl: imageUrl,
         enhancedUrl,
-        processingTime: 0, // ImageKit is instant
-        enhancements: options,
-        // Manual enhancement is synchronous (basic transformations)
-        isAsync: false,
-        status: 'completed',
-        message: 'Image enhancement completed successfully!'
+        processingTime: 0, // ImageKit processing time
+        enhancements: safeOptions,
+        // Make async when background removal is present (takes time to process)
+        isAsync: hasBackgroundRemoval,
+        status: hasBackgroundRemoval ? 'processing' : 'completed',
+        message: hasBackgroundRemoval 
+          ? 'Image enhancement is processing. This may take 30-60 seconds due to background removal...'
+          : 'Image enhancement completed successfully!',
+        estimatedTime: hasBackgroundRemoval ? '30-60 seconds' : undefined
       };
     }
 

@@ -7,7 +7,8 @@ import {
   extractExistingTransformations,
   buildChainedTransformationURL,
   createBackgroundRemovalStep,
-  mergeTransformationSteps
+  mergeTransformationSteps,
+  mergeTransformationParameters
 } from '@/lib/imagekit/server';
 import { AIServiceError } from '@/lib/ai-services';
 import { logSecurityEvent } from '@/lib/security';
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     let result;
 
     
-      // Single image processing with real ImageKit background removal with chaining
+      // Single image processing with real ImageKit background removal with parameter-level merging
       // Extract original path and existing transformations
       const originalPath = extractOriginalPath(imageUrl);
       const existingTransformations = extractExistingTransformations(imageUrl);
@@ -52,18 +53,19 @@ export async function POST(request: NextRequest) {
         backgroundColor: 'transparent'
       });
       
-      // Merge transformations (replaces existing BG removal if present, keeps others)
-      const mergedTransformations = mergeTransformationSteps(existingTransformations, bgRemovalStep);
+      // ✅ Use parameter-level merging (faster, prevents duplicates, same as enhancement)
+      // This merges all parameters into a single step instead of chaining steps
+      const mergedParameters = mergeTransformationParameters(existingTransformations, bgRemovalStep);
       
-      // Build chained transformation URL
-      const processedUrl = buildChainedTransformationURL(originalPath, mergedTransformations);
+      // Build transformation URL with single merged step (faster than chained steps)
+      const processedUrl = buildChainedTransformationURL(originalPath, [mergedParameters]);
       
-      console.log('Generated background removal URL with smart merging:', processedUrl);
+      console.log('Generated background removal URL with parameter-level merging:', processedUrl);
       console.log('Original image URL:', imageUrl);
       console.log('Extracted path:', originalPath);
       console.log('Existing transformations:', existingTransformations);
       console.log('New background removal step:', bgRemovalStep);
-      console.log('Merged transformations:', mergedTransformations);
+      console.log('Merged parameters:', mergedParameters);
 
       result = {
         originalUrl: imageUrl,

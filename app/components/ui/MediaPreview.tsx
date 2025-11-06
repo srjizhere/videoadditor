@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Video, Image as ImageIcon, Eye, Download, Share2, Edit3, Trash2 } from 'lucide-react';
 import { useNotification } from '../layout/Notification';
@@ -30,7 +30,29 @@ export default function MediaPreview({
   onDownload,
   className = ''
 }: MediaPreviewProps) {
+  const [thumbnailError, setThumbnailError] = useState(false);
+  const [thumbnailLoading, setThumbnailLoading] = useState(true);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { showNotification } = useNotification();
+
+  // Reset error state when thumbnailUrl changes
+  useEffect(() => {
+    setThumbnailError(false);
+    setThumbnailLoading(true);
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, [thumbnailUrl]);
+
+  // Cleanup retry timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -129,21 +151,77 @@ export default function MediaPreview({
           </div>
         ) : (
           <div className="relative w-full h-64 bg-base-200 flex items-center justify-center">
-            {thumbnailUrl ? (
-              <Image
-                src={thumbnailUrl}
-                alt={title || 'Video thumbnail'}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
+            {thumbnailUrl && !thumbnailError ? (
+              <>
+                <Image
+                  src={thumbnailUrl}
+                  alt={title || 'Video thumbnail'}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  unoptimized={thumbnailUrl.includes('ik-thumbnail.jpg') || thumbnailUrl.includes('?tr=')} // Don't optimize ImageKit URLs
+                  onLoad={() => {
+                    setThumbnailLoading(false);
+                    setThumbnailError(false);
+                  }}
+                  onError={(e) => {
+                    // ImageKit may need time to process the video - this is expected
+                    setThumbnailError(true);
+                    setThumbnailLoading(false);
+                    
+                    // Only log in development mode to reduce noise
+                    if (process.env.NODE_ENV === 'development') {
+                      console.warn('Thumbnail not available yet:', thumbnailUrl);
+                      console.warn('ImageKit may need 10-30 seconds to process the video after upload.');
+                    }
+                    
+                    // Clear any existing retry timeout
+                    if (retryTimeoutRef.current) {
+                      clearTimeout(retryTimeoutRef.current);
+                    }
+                    
+                    // Retry loading after a delay (ImageKit may have finished processing)
+                    retryTimeoutRef.current = setTimeout(() => {
+                      setThumbnailError(false);
+                      setThumbnailLoading(true);
+                      // Force image reload
+                      const img = e.target as HTMLImageElement;
+                      if (img && thumbnailUrl) {
+                        const currentSrc = img.src;
+                        img.src = '';
+                        setTimeout(() => {
+                          img.src = currentSrc;
+                        }, 100);
+                      }
+                    }, 10000); // Retry after 10 seconds
+                  }}
+                />
+                {thumbnailLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-base-200/80 backdrop-blur-sm z-10">
+                    <div className="text-center p-4">
+                      <div className="loading loading-spinner loading-md mb-2"></div>
+                      <p className="text-xs text-base-content/70">Loading thumbnail...</p>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center gap-2 text-base-content/50">
                 <Video className="w-12 h-12" />
                 <span className="text-sm">Video Preview</span>
+                {thumbnailUrl && thumbnailError && (
+                  <div className="mt-2 text-center">
+                    <p className="text-xs text-base-content/60">
+                      Thumbnail processing...
+                    </p>
+                    <p className="text-xs text-base-content/40 mt-1">
+                      ImageKit is generating thumbnail (may take 10-30 seconds)
+                    </p>
+                  </div>
+                )}
               </div>
             )}
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center">
                 <Video className="w-8 h-8 text-white" />
               </div>
